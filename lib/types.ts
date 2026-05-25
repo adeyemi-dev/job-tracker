@@ -4,6 +4,7 @@ export type Status =
   | "Interview"
   | "Offer"
   | "Rejected"
+  | "Ghosted"
   | "Withdrawn";
 
 export const ALL_STATUSES: Status[] = [
@@ -12,6 +13,7 @@ export const ALL_STATUSES: Status[] = [
   "Interview",
   "Offer",
   "Rejected",
+  "Ghosted",
   "Withdrawn",
 ];
 
@@ -21,6 +23,7 @@ export const STATUS_COLORS: Record<Status, string> = {
   Interview: "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
   Offer: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800",
   Rejected: "bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-300 dark:ring-red-800",
+  Ghosted: "bg-zinc-100 text-zinc-500 ring-1 ring-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600",
   Withdrawn: "bg-gray-100 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700",
 };
 
@@ -30,6 +33,7 @@ export const STATUS_DOT: Record<Status, string> = {
   Interview: "bg-amber-500",
   Offer: "bg-emerald-500",
   Rejected: "bg-red-500",
+  Ghosted: "bg-zinc-400",
   Withdrawn: "bg-gray-400",
 };
 
@@ -48,12 +52,28 @@ export function avatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+export const PLATFORMS = [
+  "LinkedIn",
+  "Indeed",
+  "NHS Jobs",
+  "Glassdoor",
+  "Reed",
+  "Totaljobs",
+  "Company Website",
+  "Recruiter",
+  "Referral",
+  "Other",
+] as const;
+
+export type Platform = (typeof PLATFORMS)[number];
+
 export interface Application {
   id: string;
   company: string;
   role: string;
   job_url: string | null;
   status: Status;
+  platform: string | null;
   applied_date: string;
   followup_date: string | null;
   notes: string | null;

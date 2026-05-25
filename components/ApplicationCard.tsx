@@ -17,7 +17,7 @@ export function ApplicationCard({ app, onDelete }: Props) {
     .join("")
     .toUpperCase();
 
-  const overdue = isOverdue(app.followup_date) && !["Rejected", "Withdrawn"].includes(app.status);
+  const overdue = isOverdue(app.followup_date) && !["Rejected", "Withdrawn", "Ghosted"].includes(app.status);
 
   return (
     <div className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-all duration-200 ${
@@ -36,6 +36,11 @@ export function ApplicationCard({ app, onDelete }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
             <StatusBadge status={app.status} />
+            {app.platform && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
+                {app.platform}
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{app.role}</p>
           {/* Date — shown below role on mobile only */}

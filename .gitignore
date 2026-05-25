@@ -42,3 +42,5 @@ next-env.d.ts
 
 uploads/
 job-tracker.db
+job-tracker.db-shm
+job-tracker.db-wal

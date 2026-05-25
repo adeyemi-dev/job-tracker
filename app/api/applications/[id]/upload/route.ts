@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 type Ctx = { params: { id: string } };
 
 export async function POST(req: NextRequest, { params }: Ctx) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { error: "File uploads are not configured. Add a Vercel Blob store or use a URL instead." },
+      { status: 503 }
+    );
+  }
+
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
-  const field = formData.get("field") as string | null; // "cv" | "cl"
+  const field = formData.get("field") as string | null;
 
   if (!file || !field) {
     return NextResponse.json({ error: "Missing file or field" }, { status: 400 });
   }
 
-  const dir = path.join(process.cwd(), "uploads", params.id);
-  await mkdir(dir, { recursive: true });
-
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const fileName = `${field}_${safeName}`;
-  const filePath = path.join(dir, fileName);
+  const blob = await put(`${params.id}/${field}_${safeName}`, file, {
+    access: "public",
+  });
 
-  const bytes = await file.arrayBuffer();
-  await writeFile(filePath, Buffer.from(bytes));
-
-  const relativePath = `${params.id}/${fileName}`;
-  return NextResponse.json({ path: relativePath });
+  return NextResponse.json({ url: blob.url });
 }

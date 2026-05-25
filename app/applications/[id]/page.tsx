@@ -157,6 +157,12 @@ export default function ApplicationDetail() {
                   </dd>
                 </div>
               )}
+              {app.platform && (
+                <div>
+                  <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Platform</dt>
+                  <dd className="text-sm font-medium text-slate-700 dark:text-slate-200">{app.platform}</dd>
+                </div>
+              )}
               {app.job_url && (
                 <div className="sm:col-span-2">
                   <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Job posting</dt>

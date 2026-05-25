@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Application, ALL_STATUSES, Status } from "@/lib/types";
+import { Application, ALL_STATUSES, Status, PLATFORMS } from "@/lib/types";
 import { FileOrLinkInput } from "./FileOrLinkInput";
 
 interface Props {
@@ -18,6 +18,7 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
   const [status, setStatus] = useState<Status>(initial?.status ?? "Applied");
   const [appliedDate, setAppliedDate] = useState(initial?.applied_date ?? new Date().toISOString().slice(0, 10));
   const [followupDate, setFollowupDate] = useState(initial?.followup_date ?? "");
+  const [platform, setPlatform] = useState(initial?.platform ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [cvFile, setCvFile] = useState<string | null>(initial?.cv_file ?? null);
   const [cvUrl, setCvUrl] = useState<string | null>(initial?.cv_url ?? null);
@@ -40,6 +41,7 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
         role: role.trim(),
         job_url: jobUrl.trim() || null,
         status,
+        platform: platform || null,
         applied_date: appliedDate,
         followup_date: followupDate || null,
         notes: notes.trim() || null,
@@ -85,11 +87,21 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Status</label>
           <select value={status} onChange={(e) => setStatus(e.target.value as Status)} className={inputCls}>
             {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>
+            Platform
+            <span className="ml-1 text-slate-400 font-normal">(optional)</span>
+          </label>
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} className={inputCls}>
+            <option value="">— Select platform —</option>
+            {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div>

@@ -41,10 +41,13 @@ export function FileOrLinkInput({
         body: fd,
       });
 
-      if (!res.ok) throw new Error("Upload failed");
-      const { path } = await res.json();
-      onFileChange(path);
-      onUrlChange(null);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Upload failed");
+      }
+      const { url } = await res.json();
+      onUrlChange(url);
+      onFileChange(null);
     } catch {
       setError("Upload failed. Try again.");
     } finally {
