@@ -3,6 +3,8 @@ import { sql } from "@/lib/db";
 import { Interview, InterviewType } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 
+export const dynamic = "force-dynamic";
+
 type Ctx = { params: { id: string } };
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
@@ -19,10 +21,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const now = new Date().toISOString();
   const id = uuidv4();
 
-  const maxRows = await sql`
+  const maxRows = (await sql`
     SELECT COALESCE(MAX(round), 0) as max_round
     FROM interviews WHERE application_id = ${params.id}
-  `;
+  `) as { max_round: number }[];
   const round = Number(maxRows[0].max_round) + 1;
 
   await sql`
@@ -31,6 +33,6 @@ export async function POST(req: NextRequest, { params }: Ctx) {
             ${body.date}, ${body.interviewer || null}, ${body.notes || null}, ${now})
   `;
 
-  const [interview] = await sql`SELECT * FROM interviews WHERE id = ${id}`;
-  return NextResponse.json(interview as Interview, { status: 201 });
+  const [interview] = (await sql`SELECT * FROM interviews WHERE id = ${id}`) as Interview[];
+  return NextResponse.json(interview, { status: 201 });
 }

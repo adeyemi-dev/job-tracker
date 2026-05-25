@@ -3,6 +3,8 @@ import { sql } from "@/lib/db";
 import { Application, Status } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const status = req.nextUrl.searchParams.get("status");
   const rows = status
@@ -28,6 +30,6 @@ export async function POST(req: NextRequest) {
        ${body.cl_file || null}, ${body.cl_url || null}, ${now}, ${now})
   `;
 
-  const [app] = await sql`SELECT * FROM applications WHERE id = ${id}`;
-  return NextResponse.json(app as Application, { status: 201 });
+  const [app] = (await sql`SELECT * FROM applications WHERE id = ${id}`) as Application[];
+  return NextResponse.json(app, { status: 201 });
 }

@@ -3,14 +3,16 @@ import { sql } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
-  const rows = await sql`SELECT COUNT(*) as count FROM users`;
+  const rows = (await sql`SELECT COUNT(*) as count FROM users`) as { count: number }[];
   const count = Number(rows[0].count);
   return NextResponse.json({ hasUsers: count > 0 });
 }
 
 export async function POST(req: Request) {
-  const rows = await sql`SELECT COUNT(*) as count FROM users`;
+  const rows = (await sql`SELECT COUNT(*) as count FROM users`) as { count: number }[];
   const count = Number(rows[0].count);
   if (count > 0) {
     return NextResponse.json({ error: "An account already exists." }, { status: 400 });

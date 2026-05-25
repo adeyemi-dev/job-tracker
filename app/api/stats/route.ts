@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 function getMondayOf(date: Date): string {
   const d = new Date(date);
   const day = d.getDay();

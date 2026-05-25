@@ -20,8 +20,8 @@ const providers: NextAuthOptions["providers"] = [
     },
     async authorize(credentials) {
       if (!credentials?.email || !credentials?.password) return null;
-      const rows = await sql`SELECT * FROM users WHERE email = ${credentials.email.toLowerCase()}`;
-      const user = rows[0] as DBUser | undefined;
+      const rows = (await sql`SELECT * FROM users WHERE email = ${credentials.email.toLowerCase()}`) as DBUser[];
+      const user = rows[0];
       if (!user || !user.password_hash) return null;
       const valid = await bcrypt.compare(credentials.password, user.password_hash);
       if (!valid) return null;
@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const rows = await sql`SELECT id FROM users WHERE email = ${user.email?.toLowerCase() ?? ""}`;
+        const rows = (await sql`SELECT id FROM users WHERE email = ${user.email?.toLowerCase() ?? ""}`) as { id: string }[];
         return rows.length > 0;
       }
       return true;
