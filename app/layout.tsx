@@ -57,6 +57,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {children}
         </main>
+        <footer className="border-t border-slate-200/80 dark:border-slate-800 mt-8">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
+            <p className="text-xs text-slate-400 dark:text-slate-600">
+              Developed by{" "}
+              <span className="font-semibold text-slate-500 dark:text-slate-500">Afeez Laguda</span>
+            </p>
+          </div>
+        </footer>
       </body>
     </html>
   );
