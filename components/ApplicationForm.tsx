@@ -6,12 +6,11 @@ import { FileOrLinkInput } from "./FileOrLinkInput";
 
 interface Props {
   initial?: Partial<Application>;
-  applicationId?: string;
-  onSubmit: (data: Partial<Application>) => Promise<void>;
+  onSubmit: (data: Partial<Application>) => void;
   submitLabel: string;
 }
 
-export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel }: Props) {
+export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
   const [company, setCompany] = useState(initial?.company ?? "");
   const [role, setRole] = useState(initial?.role ?? "");
   const [jobUrl, setJobUrl] = useState(initial?.job_url ?? "");
@@ -20,40 +19,29 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
   const [followupDate, setFollowupDate] = useState(initial?.followup_date ?? "");
   const [platform, setPlatform] = useState(initial?.platform ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [cvFile, setCvFile] = useState<string | null>(initial?.cv_file ?? null);
   const [cvUrl, setCvUrl] = useState<string | null>(initial?.cv_url ?? null);
-  const [clFile, setClFile] = useState<string | null>(initial?.cl_file ?? null);
   const [clUrl, setClUrl] = useState<string | null>(initial?.cl_url ?? null);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!company.trim() || !role.trim()) {
       setError("Company and role are required.");
       return;
     }
-    setSubmitting(true);
     setError(null);
-    try {
-      await onSubmit({
-        company: company.trim(),
-        role: role.trim(),
-        job_url: jobUrl.trim() || null,
-        status,
-        platform: platform || null,
-        applied_date: appliedDate,
-        followup_date: followupDate || null,
-        notes: notes.trim() || null,
-        cv_file: cvFile,
-        cv_url: cvUrl,
-        cl_file: clFile,
-        cl_url: clUrl,
-      });
-    } catch {
-      setError("Something went wrong. Please try again.");
-      setSubmitting(false);
-    }
+    onSubmit({
+      company: company.trim(),
+      role: role.trim(),
+      job_url: jobUrl.trim() || null,
+      status,
+      platform: platform || null,
+      applied_date: appliedDate,
+      followup_date: followupDate || null,
+      notes: notes.trim() || null,
+      cv_url: cvUrl,
+      cl_url: clUrl,
+    });
   }
 
   const inputCls = "w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow bg-white dark:bg-slate-800 dark:[color-scheme:dark]";
@@ -95,10 +83,7 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
           </select>
         </div>
         <div>
-          <label className={labelCls}>
-            Platform
-            <span className="ml-1 text-slate-400 font-normal">(optional)</span>
-          </label>
+          <label className={labelCls}>Platform <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
           <select value={platform} onChange={(e) => setPlatform(e.target.value)} className={inputCls}>
             <option value="">— Select platform —</option>
             {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -109,10 +94,7 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
           <input type="date" value={appliedDate} onChange={(e) => setAppliedDate(e.target.value)} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>
-            Follow-up date
-            <span className="ml-1 text-slate-400 font-normal">(optional)</span>
-          </label>
+          <label className={labelCls}>Follow-up date <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
           <input type="date" value={followupDate} onChange={(e) => setFollowupDate(e.target.value)} className={inputCls} />
         </div>
       </div>
@@ -124,10 +106,8 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-        <FileOrLinkInput label="CV" field="cv" applicationId={applicationId}
-          currentFile={cvFile} currentUrl={cvUrl} onFileChange={setCvFile} onUrlChange={setCvUrl} />
-        <FileOrLinkInput label="Cover letter" field="cl" applicationId={applicationId}
-          currentFile={clFile} currentUrl={clUrl} onFileChange={setClFile} onUrlChange={setClUrl} />
+        <FileOrLinkInput label="CV link" currentUrl={cvUrl} onUrlChange={setCvUrl} />
+        <FileOrLinkInput label="Cover letter link" currentUrl={clUrl} onUrlChange={setClUrl} />
       </div>
 
       {error && (
@@ -140,17 +120,9 @@ export function ApplicationForm({ initial, applicationId, onSubmit, submitLabel 
       )}
 
       <div className="pt-1">
-        <button type="submit" disabled={submitting}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95 shadow-sm shadow-indigo-200">
-          {submitting ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Saving…
-            </>
-          ) : submitLabel}
+        <button type="submit"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all active:scale-95 shadow-sm shadow-indigo-200">
+          {submitLabel}
         </button>
       </div>
     </form>

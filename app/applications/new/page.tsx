@@ -3,18 +3,13 @@
 import { useRouter } from "next/navigation";
 import { ApplicationForm } from "@/components/ApplicationForm";
 import { Application } from "@/lib/types";
+import { createApp } from "@/lib/store";
 
 export default function NewApplication() {
   const router = useRouter();
 
-  async function handleSubmit(data: Partial<Application>) {
-    const res = await fetch("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("Failed to create");
-    const created: Application = await res.json();
+  function handleSubmit(data: Partial<Application>) {
+    const created = createApp(data);
     router.push(`/applications/${created.id}`);
   }
 

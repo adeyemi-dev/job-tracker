@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { UserNav } from "@/components/UserNav";
-import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Job Tracker",
@@ -13,7 +11,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Prevent flash of wrong theme */}
         <script dangerouslySetInnerHTML={{ __html: `
           try {
             var t = localStorage.getItem('theme');
@@ -23,46 +20,43 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body className="bg-slate-50 dark:bg-slate-950 min-h-screen transition-colors duration-200">
-        <Providers>
-          <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-md">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-              <div className="flex items-center gap-4 sm:gap-6">
-                <a href="/" className="flex items-center gap-2.5">
-                  <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-300 dark:shadow-indigo-900">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900" />
-                  </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-[15px] tracking-tight">JobTracker</span>
-                </a>
-                <a href="/stats"
-                  className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-md">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <a href="/" className="flex items-center gap-2.5">
+                <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-300 dark:shadow-indigo-900">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  Stats
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <ThemeToggle />
-                <UserNav />
-                <a
-                  href="/applications/new"
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="hidden sm:inline">New application</span>
-                </a>
-              </div>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900" />
+                </div>
+                <span className="font-bold text-slate-900 dark:text-white text-[15px] tracking-tight">JobTracker</span>
+              </a>
+              <a href="/stats"
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Stats
+              </a>
             </div>
-          </nav>
-          <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-            {children}
-          </main>
-        </Providers>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <a
+                href="/applications/new"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden sm:inline">New application</span>
+              </a>
+            </div>
+          </div>
+        </nav>
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {children}
+        </main>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ALL_STATUSES, STATUS_COLORS, STATUS_DOT, Status } from "@/lib/types";
+import { getApps } from "@/lib/store";
 
 interface StatsData {
   total: number;
@@ -52,39 +53,52 @@ function WeeklyChart({ trend, thisWeekStart }: { trend: StatsData["weeklyTrend"]
   );
 }
 
+function getMondayOf(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+  return d.toISOString().slice(0, 10);
+}
+
+function computeStats(): StatsData {
+  const apps = getApps();
+  const now = new Date();
+  const thisWeekStart = getMondayOf(now);
+  const lastWeekStart = getMondayOf(new Date(now.getTime() - 7 * 86400000));
+
+  const total = apps.length;
+  const thisWeek = apps.filter((a) => a.applied_date >= thisWeekStart).length;
+  const lastWeek = apps.filter((a) => a.applied_date >= lastWeekStart && a.applied_date < thisWeekStart).length;
+
+  const byStatus: Record<string, number> = {};
+  const byPlatform: Record<string, number> = {};
+  for (const a of apps) {
+    byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+    const p = a.platform || "Not specified";
+    byPlatform[p] = (byPlatform[p] || 0) + 1;
+  }
+
+  const responded = apps.filter((a) => ["Interview", "Offer", "Rejected", "Ghosted"].includes(a.status)).length;
+  const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0;
+  const offerRate = total > 0 ? Math.round((apps.filter((a) => a.status === "Offer").length / total) * 100) : 0;
+
+  const weeklyTrend: StatsData["weeklyTrend"] = [];
+  for (let i = 7; i >= 0; i--) {
+    const weekDate = new Date(now.getTime() - i * 7 * 86400000);
+    const weekStart = getMondayOf(weekDate);
+    const nextWeekStart = getMondayOf(new Date(weekDate.getTime() + 7 * 86400000));
+    const count = apps.filter((a) => a.applied_date >= weekStart && a.applied_date < nextWeekStart).length;
+    const label = new Date(weekStart).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    weeklyTrend.push({ week: weekStart, label, count });
+  }
+
+  return { total, thisWeek, lastWeek, byStatus, byPlatform, responseRate, offerRate, weeklyTrend, thisWeekStart };
+}
+
 export default function StatsPage() {
   const [data, setData] = useState<StatsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/stats")
-      .then((r) => {
-        if (!r.ok) throw new Error("API error");
-        return r.json();
-      })
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => { setFetchError(true); setLoading(false); });
-  }, []);
-
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center py-24 gap-3">
-      <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-slate-400">Loading stats…</p>
-    </div>
-  );
-
-  if (fetchError) return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
-        <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <p className="font-medium text-slate-700 dark:text-slate-200 mb-1">Couldn&apos;t load stats</p>
-      <p className="text-sm text-slate-400 dark:text-slate-500">Check that the database is connected in Vercel.</p>
-    </div>
-  );
+  useEffect(() => { setData(computeStats()); }, []);
 
   if (!data || data.total === 0) return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
