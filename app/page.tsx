@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Application, ALL_STATUSES, Status, STATUS_DOT, isOverdue } from "@/lib/types";
 import { ApplicationCard } from "@/components/ApplicationCard";
 import { DailyGoalBanner } from "@/components/DailyGoalBanner";
-import { getApps, deleteApp } from "@/lib/store";
+import { KanbanBoard } from "@/components/KanbanBoard";
+import { getApps, deleteApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -40,12 +41,65 @@ const STAT_STATUSES: { label: string; key: Status | "Active"; color: string; bg:
   },
 ];
 
+type ViewMode = "list" | "board";
+
+function readView(): ViewMode {
+  if (typeof window === "undefined") return "list";
+  return (localStorage.getItem("jt-view") as ViewMode) ?? "list";
+}
+
 export default function Dashboard() {
   const [allApps, setAllApps] = useState<Application[]>([]);
   const [filter, setFilter] = useState<Status | "All">("All");
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<ViewMode>("list");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setAllApps(getApps()); }, []);
+  useEffect(() => {
+    setAllApps(getApps());
+    setView(readView());
+  }, []);
+
+  function switchView(v: ViewMode) {
+    setView(v);
+    localStorage.setItem("jt-view", v);
+  }
+
+  function handleExportJSON() {
+    const blob = new Blob([exportJSON()], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `jobtracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  }
+
+  function handleExportCSV() {
+    const blob = new Blob([exportCSV()], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `jobtracker-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  }
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const { count } = importJSON(ev.target?.result as string);
+        setAllApps(getApps());
+        setImportMsg(`Imported ${count} application${count !== 1 ? "s" : ""}`);
+        setTimeout(() => setImportMsg(null), 3000);
+      } catch {
+        setImportMsg("Invalid file — import failed");
+        setTimeout(() => setImportMsg(null), 3000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
 
   function handleDelete(id: string) {
     if (!confirm("Delete this application?")) return;
@@ -126,6 +180,72 @@ export default function Dashboard() {
           })}
         </div>
       )}
+
+      {/* Toolbar: view toggle + export/import */}
+      {allApps.length > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+            <button
+              onClick={() => switchView("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === "list" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              List
+            </button>
+            <button
+              onClick={() => switchView("board")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === "board" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+              Board
+            </button>
+          </div>
+
+          {/* Export / Import */}
+          <div className="flex items-center gap-2">
+            {importMsg && (
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${importMsg.includes("failed") ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"}`}>
+                {importMsg}
+              </span>
+            )}
+            <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+            <button onClick={handleExportJSON}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              JSON
+            </button>
+            <button onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
+            <button onClick={() => importRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
+              </svg>
+              Import
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Kanban board */}
+      {view === "board" && allApps.length > 0 && (
+        <KanbanBoard apps={allApps} onAppsChange={setAllApps} />
+      )}
+
+      {/* List-view content */}
+      {view === "list" && (<>
 
       {/* Overdue follow-ups banner */}
       {overdueApps.length > 0 && (
@@ -271,6 +391,8 @@ export default function Dashboard() {
           ))}
         </div>
       )}
+
+      </>)}
     </div>
   );
 }

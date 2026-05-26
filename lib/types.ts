@@ -60,6 +60,19 @@ export function avatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+export type WorkType = "Remote" | "Hybrid" | "On-site";
+export const WORK_TYPES: WorkType[] = ["Remote", "Hybrid", "On-site"];
+
+export type ContractType = "Full-time" | "Part-time" | "Contract" | "Internship";
+export const CONTRACT_TYPES: ContractType[] = ["Full-time", "Part-time", "Contract", "Internship"];
+
+export const CURRENCIES = ["GBP", "USD", "EUR", "CAD", "AUD"] as const;
+export type Currency = (typeof CURRENCIES)[number];
+
+export const CURRENCY_SYMBOL: Record<Currency, string> = {
+  GBP: "£", USD: "$", EUR: "€", CAD: "CA$", AUD: "A$",
+};
+
 export const PLATFORMS = [
   "LinkedIn",
   "Indeed",
@@ -90,6 +103,11 @@ export interface Application {
   cv_url: string | null;
   cl_file: string | null;
   cl_url: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  currency: Currency | null;
+  work_type: WorkType | null;
+  contract_type: ContractType | null;
   created_at: string;
   updated_at: string;
 }

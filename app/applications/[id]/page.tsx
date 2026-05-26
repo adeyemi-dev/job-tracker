@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { Application, ALL_STATUSES, Status, Interview, isOverdue } from "@/lib/types";
+import { Application, ALL_STATUSES, Status, Interview, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 import { getApp, updateApp, deleteApp, getInterviews } from "@/lib/store";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ApplicationForm } from "@/components/ApplicationForm";
@@ -119,6 +119,32 @@ export default function ApplicationDetail() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Details</p>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              {(app.salary_min || app.salary_max) && (
+                <div>
+                  <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Salary</dt>
+                  <dd className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    {(() => {
+                      const sym = app.currency ? (CURRENCY_SYMBOL[app.currency as Currency] ?? app.currency) : "£";
+                      const fmt = (n: number) => sym + n.toLocaleString();
+                      if (app.salary_min && app.salary_max) return `${fmt(app.salary_min)} – ${fmt(app.salary_max)}`;
+                      if (app.salary_min) return `From ${fmt(app.salary_min)}`;
+                      return `Up to ${fmt(app.salary_max!)}`;
+                    })()}
+                  </dd>
+                </div>
+              )}
+              {app.work_type && (
+                <div>
+                  <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Work type</dt>
+                  <dd className="text-sm font-medium text-slate-700 dark:text-slate-200">{app.work_type}</dd>
+                </div>
+              )}
+              {app.contract_type && (
+                <div>
+                  <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Contract</dt>
+                  <dd className="text-sm font-medium text-slate-700 dark:text-slate-200">{app.contract_type}</dd>
+                </div>
+              )}
               {app.platform && (
                 <div>
                   <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Platform</dt>

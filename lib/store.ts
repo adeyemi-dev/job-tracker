@@ -1,4 +1,4 @@
-import { Application, Interview, InterviewType, Status } from "./types";
+import { Application, Interview, InterviewType, Status, Currency, WorkType, ContractType } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 const APPS_KEY = "jt-apps";
@@ -40,6 +40,11 @@ export function createApp(data: Partial<Application>): Application {
     cv_url: data.cv_url ?? null,
     cl_file: null,
     cl_url: data.cl_url ?? null,
+    salary_min: data.salary_min ?? null,
+    salary_max: data.salary_max ?? null,
+    currency: (data.currency as Currency) ?? null,
+    work_type: (data.work_type as WorkType) ?? null,
+    contract_type: (data.contract_type as ContractType) ?? null,
     created_at: now,
     updated_at: now,
   };
@@ -118,6 +123,39 @@ export function saveReminderTime(t: string) { write(REMINDER_TIME_KEY, t); }
 
 export function getNotifEnabled(): boolean { return read<boolean>(NOTIF_KEY, false); }
 export function saveNotifEnabled(v: boolean) { write(NOTIF_KEY, v); }
+
+// Export / Import
+
+export function exportJSON(): string {
+  const apps = getApps();
+  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
+  return JSON.stringify({ apps, interviews: ivs, exported_at: new Date().toISOString() }, null, 2);
+}
+
+export function exportCSV(): string {
+  const apps = getApps();
+  const headers: (keyof Application)[] = [
+    "id", "company", "role", "status", "platform", "applied_date", "followup_date",
+    "job_url", "notes", "cv_url", "cl_url",
+    "salary_min", "salary_max", "currency", "work_type", "contract_type",
+    "created_at", "updated_at",
+  ];
+  const escape = (v: unknown) => {
+    if (v == null) return "";
+    const s = String(v);
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = apps.map((a) => headers.map((h) => escape(a[h])).join(","));
+  return [headers.join(","), ...rows].join("\n");
+}
+
+export function importJSON(json: string): { count: number } {
+  const data = JSON.parse(json) as { apps?: Application[]; interviews?: Record<string, Interview[]> };
+  if (!data.apps || !Array.isArray(data.apps)) throw new Error("Invalid backup file");
+  write(APPS_KEY, data.apps);
+  if (data.interviews) write(IVS_KEY, data.interviews);
+  return { count: data.apps.length };
+}
 
 export function getTodayCount(): number {
   const today = new Date().toISOString().slice(0, 10);

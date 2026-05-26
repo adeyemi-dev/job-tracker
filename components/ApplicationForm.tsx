@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Application, ALL_STATUSES, Status, PLATFORMS } from "@/lib/types";
+import { Application, ALL_STATUSES, Status, PLATFORMS, WORK_TYPES, CONTRACT_TYPES, CURRENCIES, WorkType, ContractType, Currency } from "@/lib/types";
 import { FileOrLinkInput } from "./FileOrLinkInput";
 
 interface Props {
@@ -29,6 +29,11 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [cvUrl, setCvUrl] = useState<string | null>(initial?.cv_url ?? null);
   const [clUrl, setClUrl] = useState<string | null>(initial?.cl_url ?? null);
+  const [workType, setWorkType] = useState<WorkType | "">(initial?.work_type ?? "");
+  const [contractType, setContractType] = useState<ContractType | "">(initial?.contract_type ?? "");
+  const [currency, setCurrency] = useState<Currency | "">(initial?.currency ?? "GBP");
+  const [salaryMin, setSalaryMin] = useState(initial?.salary_min != null ? String(initial.salary_min) : "");
+  const [salaryMax, setSalaryMax] = useState(initial?.salary_max != null ? String(initial.salary_max) : "");
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -52,6 +57,11 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
       notes: notes.trim() || null,
       cv_url: cvUrl,
       cl_url: clUrl,
+      work_type: workType || null,
+      contract_type: contractType || null,
+      currency: (salaryMin || salaryMax) ? (currency || "GBP") as Currency : null,
+      salary_min: salaryMin ? Number(salaryMin) : null,
+      salary_max: salaryMax ? Number(salaryMax) : null,
     });
   }
 
@@ -119,10 +129,42 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
         </div>
       </div>
 
+      {/* Compensation */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Work type <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
+          <select value={workType} onChange={(e) => setWorkType(e.target.value as WorkType | "")} className={inputCls}>
+            <option value="">— Select —</option>
+            {WORK_TYPES.map((w) => <option key={w} value={w}>{w}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Contract type <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
+          <select value={contractType} onChange={(e) => setContractType(e.target.value as ContractType | "")} className={inputCls}>
+            <option value="">— Select —</option>
+            {CONTRACT_TYPES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Salary range <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
+        <div className="flex items-center gap-2">
+          <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className={`${inputCls} w-24 shrink-0`}>
+            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input type="number" min={0} value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)}
+            className={inputCls} placeholder="Min" />
+          <span className="text-slate-400 shrink-0">–</span>
+          <input type="number" min={0} value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)}
+            className={inputCls} placeholder="Max" />
+        </div>
+      </div>
+
       <div>
         <label className={labelCls}>Notes</label>
         <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}
-          className={`${inputCls} resize-none`} placeholder="Recruiter name, interview tips, salary range…" />
+          className={`${inputCls} resize-none`} placeholder="Recruiter name, interview tips…" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">

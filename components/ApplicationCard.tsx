@@ -1,8 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Application, avatarColor, isOverdue } from "@/lib/types";
+import { Application, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 import { StatusBadge } from "./StatusBadge";
+
+function formatSalary(app: Application): string | null {
+  if (!app.salary_min && !app.salary_max) return null;
+  const sym = app.currency ? (CURRENCY_SYMBOL[app.currency as Currency] ?? app.currency) : "£";
+  const fmt = (n: number) => sym + n.toLocaleString();
+  if (app.salary_min && app.salary_max) return `${fmt(app.salary_min)} – ${fmt(app.salary_max)}`;
+  if (app.salary_min) return `From ${fmt(app.salary_min)}`;
+  return `Up to ${fmt(app.salary_max!)}`;
+}
 
 interface Props {
   app: Application;
@@ -18,6 +27,7 @@ export function ApplicationCard({ app, onDelete }: Props) {
     .toUpperCase();
 
   const overdue = isOverdue(app.followup_date) && !["Rejected", "Withdrawn", "Ghosted"].includes(app.status);
+  const salary = formatSalary(app);
 
   return (
     <div className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-all duration-200 ${
@@ -43,6 +53,13 @@ export function ApplicationCard({ app, onDelete }: Props) {
             )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{app.role}</p>
+          {(salary || app.work_type || app.contract_type) && (
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {salary && <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{salary}</span>}
+              {app.work_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.work_type}</span>}
+              {app.contract_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.contract_type}</span>}
+            </div>
+          )}
           {/* Date — shown below role on mobile only */}
           <p className="sm:hidden text-xs text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums">
             {new Date(app.applied_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
