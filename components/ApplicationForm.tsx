@@ -10,14 +10,22 @@ interface Props {
   submitLabel: string;
 }
 
+const PLATFORM_VALUES = PLATFORMS as readonly string[];
+
 export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
   const [company, setCompany] = useState(initial?.company ?? "");
   const [role, setRole] = useState(initial?.role ?? "");
   const [jobUrl, setJobUrl] = useState(initial?.job_url ?? "");
-  const [status, setStatus] = useState<Status>(initial?.status ?? "Applied");
+  const [status, setStatus] = useState<Status>(initial?.status ?? "Saved");
   const [appliedDate, setAppliedDate] = useState(initial?.applied_date ?? new Date().toISOString().slice(0, 10));
   const [followupDate, setFollowupDate] = useState(initial?.followup_date ?? "");
-  const [platform, setPlatform] = useState(initial?.platform ?? "");
+
+  // Platform: detect if stored value is a known platform or a custom "Other" entry
+  const storedPlatform = initial?.platform ?? "";
+  const isStoredCustom = storedPlatform !== "" && !PLATFORM_VALUES.includes(storedPlatform);
+  const [platformSelect, setPlatformSelect] = useState(isStoredCustom ? "Other" : storedPlatform);
+  const [platformCustom, setPlatformCustom] = useState(isStoredCustom ? storedPlatform : "");
+
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [cvUrl, setCvUrl] = useState<string | null>(initial?.cv_url ?? null);
   const [clUrl, setClUrl] = useState<string | null>(initial?.cl_url ?? null);
@@ -29,13 +37,16 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
       setError("Company and role are required.");
       return;
     }
+    const resolvedPlatform =
+      platformSelect === "Other" ? (platformCustom.trim() || null) :
+      platformSelect || null;
     setError(null);
     onSubmit({
       company: company.trim(),
       role: role.trim(),
       job_url: jobUrl.trim() || null,
       status,
-      platform: platform || null,
+      platform: resolvedPlatform,
       applied_date: appliedDate,
       followup_date: followupDate || null,
       notes: notes.trim() || null,
@@ -84,10 +95,19 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
         </div>
         <div>
           <label className={labelCls}>Platform <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
-          <select value={platform} onChange={(e) => setPlatform(e.target.value)} className={inputCls}>
+          <select value={platformSelect} onChange={(e) => { setPlatformSelect(e.target.value); if (e.target.value !== "Other") setPlatformCustom(""); }} className={inputCls}>
             <option value="">— Select platform —</option>
             {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
+          {platformSelect === "Other" && (
+            <input
+              type="text"
+              value={platformCustom}
+              onChange={(e) => setPlatformCustom(e.target.value)}
+              placeholder="Where did you see the job?"
+              className={`${inputCls} mt-2`}
+            />
+          )}
         </div>
         <div>
           <label className={labelCls}>Applied date</label>

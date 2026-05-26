@@ -1,4 +1,6 @@
 export type Status =
+  | "Saved"
+  | "In Progress"
   | "Applied"
   | "Phone Screen"
   | "Interview"
@@ -8,6 +10,8 @@ export type Status =
   | "Withdrawn";
 
 export const ALL_STATUSES: Status[] = [
+  "Saved",
+  "In Progress",
   "Applied",
   "Phone Screen",
   "Interview",
@@ -18,6 +22,8 @@ export const ALL_STATUSES: Status[] = [
 ];
 
 export const STATUS_COLORS: Record<Status, string> = {
+  Saved: "bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-800",
+  "In Progress": "bg-purple-50 text-purple-700 ring-1 ring-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:ring-purple-800",
   Applied: "bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800",
   "Phone Screen": "bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:ring-violet-800",
   Interview: "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
@@ -28,6 +34,8 @@ export const STATUS_COLORS: Record<Status, string> = {
 };
 
 export const STATUS_DOT: Record<Status, string> = {
+  Saved: "bg-teal-400",
+  "In Progress": "bg-purple-400",
   Applied: "bg-sky-500",
   "Phone Screen": "bg-violet-500",
   Interview: "bg-amber-500",
@@ -56,6 +64,7 @@ export const PLATFORMS = [
   "LinkedIn",
   "Indeed",
   "NHS Jobs",
+  "University Jobs",
   "Glassdoor",
   "Reed",
   "Totaljobs",

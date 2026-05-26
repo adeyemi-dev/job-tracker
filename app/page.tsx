@@ -58,7 +58,7 @@ export default function Dashboard() {
     .filter((a) => !q || a.company.toLowerCase().includes(q) || a.role.toLowerCase().includes(q));
 
   const overdueApps = allApps.filter(
-    (a) => isOverdue(a.followup_date) && !["Rejected", "Withdrawn", "Ghosted"].includes(a.status)
+    (a) => isOverdue(a.followup_date) && !["Saved", "In Progress", "Rejected", "Withdrawn", "Ghosted"].includes(a.status)
   );
 
   const activeCount = allApps.filter((a) => !["Rejected", "Withdrawn", "Offer", "Ghosted"].includes(a.status)).length;

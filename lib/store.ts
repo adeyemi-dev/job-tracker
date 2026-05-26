@@ -31,7 +31,7 @@ export function createApp(data: Partial<Application>): Application {
     company: data.company ?? "",
     role: data.role ?? "",
     job_url: data.job_url ?? null,
-    status: (data.status as Status) ?? "Applied",
+    status: (data.status as Status) ?? "Saved",
     platform: data.platform ?? null,
     applied_date: data.applied_date ?? now.slice(0, 10),
     followup_date: data.followup_date ?? null,
