@@ -8,6 +8,31 @@ import {
   getTodayCount,
 } from "@/lib/store";
 
+// iOS Safari does not support the Notification API outside of an installed PWA
+function getNotifSupport(): "supported" | "ios-browser" | "unsupported" {
+  if (typeof window === "undefined") return "unsupported";
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = (navigator as unknown as { standalone?: boolean }).standalone === true;
+  if (isIOS && !isStandalone) return "ios-browser";
+  if (typeof Notification === "undefined") return "unsupported";
+  return "supported";
+}
+
+async function getSwRegistration(): Promise<ServiceWorkerRegistration | null> {
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    return await navigator.serviceWorker.register("/sw.js");
+  } catch {
+    return null;
+  }
+}
+
+async function sendSwMessage(msg: object) {
+  if (!("serviceWorker" in navigator)) return;
+  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  reg?.active?.postMessage(msg);
+}
+
 export function DailyGoalBanner() {
   const [todayCount, setTodayCount] = useState(0);
   const [goal, setGoal] = useState(5);
@@ -16,44 +41,47 @@ export function DailyGoalBanner() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [showSettings, setShowSettings] = useState(false);
   const [flashSaved, setFlashSaved] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const support = useRef<"supported" | "ios-browser" | "unsupported">("unsupported");
 
   useEffect(() => {
+    support.current = getNotifSupport();
     setTodayCount(getTodayCount());
     setGoal(getDailyGoal());
     setReminderTime(getReminderTime());
     setNotifEnabled(getNotifEnabled());
-    if (typeof Notification !== "undefined") setPermission(Notification.permission);
+    if (support.current === "supported") {
+      setPermission(Notification.permission);
+      // Register SW so it's ready
+      getSwRegistration();
+    }
   }, []);
 
-  // Schedule the daily notification whenever goal/time/enabled changes
+  // Re-schedule with SW whenever settings change
   useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!notifEnabled || typeof Notification === "undefined" || Notification.permission !== "granted") return;
-
+    if (!notifEnabled || support.current !== "supported" || Notification.permission !== "granted") {
+      sendSwMessage({ type: "CANCEL" });
+      return;
+    }
     const [h, m] = reminderTime.split(":").map(Number);
     const now = new Date();
     const fire = new Date();
     fire.setHours(h, m, 0, 0);
-    if (fire <= now) return; // time already passed today
+    if (fire <= now) return;
 
-    timerRef.current = setTimeout(() => {
-      const count = getTodayCount();
-      const g = getDailyGoal();
-      if (count < g) {
-        new Notification("JobTracker — Daily reminder 🎯", {
-          body: `You've applied to ${count} of ${g} jobs today. ${g - count} more to go!`,
-          icon: "/favicon.ico",
-          tag: "jt-daily",
-        });
-      }
-    }, fire.getTime() - now.getTime());
-
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    const count = getTodayCount();
+    const g = getDailyGoal();
+    sendSwMessage({
+      type: "SCHEDULE",
+      delayMs: fire.getTime() - now.getTime(),
+      title: "JobTracker — Daily reminder 🎯",
+      body: `You've applied to ${count} of ${g} jobs today. ${g - count} more to go!`,
+    });
   }, [notifEnabled, reminderTime, goal]);
 
   async function handleEnableNotifications() {
-    if (typeof Notification === "undefined") return;
+    if (support.current !== "supported") return;
+    // Ensure SW is registered before requesting permission
+    await getSwRegistration();
     const result = await Notification.requestPermission();
     setPermission(result);
     if (result === "granted") {
@@ -164,16 +192,24 @@ export function DailyGoalBanner() {
           <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
             <div className="min-w-0">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Browser notifications</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                {permission === "denied"
-                  ? "Blocked in browser — allow in site settings"
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                {support.current === "ios-browser"
+                  ? "Add to Home Screen to enable reminders on iOS"
+                  : support.current === "unsupported"
+                  ? "Not supported in this browser"
+                  : permission === "denied"
+                  ? "Blocked — allow in browser site settings"
                   : permission === "granted"
                   ? notifEnabled ? `Will remind you at ${reminderTime}` : "Notifications off"
-                  : "Click Enable to allow daily reminders"}
+                  : "Tap Enable to allow daily reminders"}
               </p>
             </div>
 
-            {permission === "granted" ? (
+            {support.current !== "supported" ? (
+              <span className="text-xs px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 shrink-0 cursor-not-allowed">
+                {support.current === "ios-browser" ? "iOS only" : "N/A"}
+              </span>
+            ) : permission === "granted" ? (
               <button
                 onClick={() => setNotifEnabled(!notifEnabled)}
                 className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${notifEnabled ? "bg-indigo-600" : "bg-slate-300 dark:bg-slate-600"}`}
