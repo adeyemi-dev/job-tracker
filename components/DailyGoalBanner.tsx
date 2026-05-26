@@ -5,7 +5,7 @@ import {
   getDailyGoal, saveDailyGoal,
   getReminderTime, saveReminderTime,
   getNotifEnabled, saveNotifEnabled,
-  getTodayCount,
+  getTodayCount, getStreakData,
 } from "@/lib/store";
 import { ConfettiCelebration } from "./ConfettiCelebration";
 
@@ -37,6 +37,7 @@ async function sendSwMessage(msg: object) {
 export function DailyGoalBanner() {
   const [todayCount, setTodayCount] = useState(0);
   const [goal, setGoal] = useState(5);
+  const [streak, setStreak] = useState({ current: 0, best: 0 });
   const [showConfetti, setShowConfetti] = useState(false);
   const [reminderTime, setReminderTime] = useState("09:00");
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -51,6 +52,7 @@ export function DailyGoalBanner() {
     const g = getDailyGoal();
     setTodayCount(count);
     setGoal(g);
+    setStreak(getStreakData());
     setReminderTime(getReminderTime());
     setNotifEnabled(getNotifEnabled());
     if (support.current === "supported") {
@@ -58,9 +60,10 @@ export function DailyGoalBanner() {
       getSwRegistration();
     }
 
-    // Fire confetti once per day when goal is met
+    // Fire confetti once per day when goal is met, with bonus on streak milestones
     if (count >= g && g > 0) {
-      const key = `jt-confetti-${new Date().toISOString().slice(0, 10)}-${g}`;
+      const today = new Date().toISOString().slice(0, 10);
+      const key = `jt-confetti-${today}-${g}`;
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, "1");
         setTimeout(() => setShowConfetti(true), 400);
@@ -150,6 +153,30 @@ export function DailyGoalBanner() {
                 {goal - todayCount} more to hit your daily goal
               </p>
             )}
+
+            {/* Streak */}
+            <div className="flex items-center gap-3 mt-2">
+              {streak.current > 0 ? (
+                <span className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                  streak.current >= 30 ? "text-amber-500 dark:text-amber-400" :
+                  streak.current >= 7  ? "text-orange-500 dark:text-orange-400" :
+                  streak.current >= 3  ? "text-amber-500 dark:text-amber-400" :
+                  "text-slate-500 dark:text-slate-400"
+                }`}>
+                  🔥 {streak.current} day{streak.current !== 1 ? "s" : ""} streak
+                  {streak.current >= 7 && <span className="ml-0.5">·  keep it up!</span>}
+                </span>
+              ) : (
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  Hit your goal today to start a streak 🔥
+                </span>
+              )}
+              {streak.best > streak.current && streak.best > 1 && (
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  Best: {streak.best}d
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Gear button */}
