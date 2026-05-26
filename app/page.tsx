@@ -64,6 +64,7 @@ function readView(): ViewMode {
 
 export default function Dashboard() {
   const [allApps, setAllApps] = useState<Application[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [filter, setFilter] = useState<Status | "All">("All");
   const [starredOnly, setStarredOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -75,6 +76,7 @@ export default function Dashboard() {
   useEffect(() => {
     setAllApps(getApps());
     setView(readView());
+    setLoaded(true);
   }, []);
 
   function switchView(v: ViewMode) {
@@ -198,7 +200,7 @@ export default function Dashboard() {
       <DailyGoalBanner />
 
       {/* Stat cards */}
-      {allApps.length > 0 && (
+      {loaded && allApps.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {STAT_STATUSES.map(({ label, key, color, bg, darkColor, darkBg, icon }) => {
             const count = key === "Active" ? activeCount : countFor(key as Status);
@@ -214,7 +216,7 @@ export default function Dashboard() {
       )}
 
       {/* Toolbar: view toggle + export/import */}
-      {allApps.length > 0 && (
+      {loaded && allApps.length > 0 && (
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           {/* View toggle */}
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
@@ -272,12 +274,12 @@ export default function Dashboard() {
       )}
 
       {/* Kanban board */}
-      {view === "board" && allApps.length > 0 && (
+      {loaded && view === "board" && allApps.length > 0 && (
         <KanbanBoard apps={allApps} onAppsChange={setAllApps} />
       )}
 
       {/* List-view content */}
-      {view === "list" && (<>
+      {loaded && view === "list" && (<>
 
       {/* Overdue follow-ups banner */}
       {overdueApps.length > 0 && (
@@ -379,7 +381,7 @@ export default function Dashboard() {
       </div>
 
       {/* List */}
-      {displayed.length === 0 && allApps.length === 0 ? (
+      {!loaded ? null : displayed.length === 0 && allApps.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           {/* Illustrated empty state SVG */}
           <div className="relative mb-6">
