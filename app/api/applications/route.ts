@@ -6,11 +6,16 @@ import { v4 as uuidv4 } from "uuid";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const status = req.nextUrl.searchParams.get("status");
-  const rows = status
-    ? await sql`SELECT * FROM applications WHERE status = ${status} ORDER BY applied_date DESC`
-    : await sql`SELECT * FROM applications ORDER BY applied_date DESC`;
-  return NextResponse.json(rows as Application[]);
+  try {
+    const status = req.nextUrl.searchParams.get("status");
+    const rows = status
+      ? await sql`SELECT * FROM applications WHERE status = ${status} ORDER BY applied_date DESC`
+      : await sql`SELECT * FROM applications ORDER BY applied_date DESC`;
+    return NextResponse.json(rows as Application[]);
+  } catch (e) {
+    console.error("GET /api/applications:", e);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

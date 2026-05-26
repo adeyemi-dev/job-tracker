@@ -55,17 +55,34 @@ function WeeklyChart({ trend, thisWeekStart }: { trend: StatsData["weeklyTrend"]
 export default function StatsPage() {
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch("/api/stats")
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+      .then((r) => {
+        if (!r.ok) throw new Error("API error");
+        return r.json();
+      })
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => { setFetchError(true); setLoading(false); });
   }, []);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-24 gap-3">
       <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       <p className="text-sm text-slate-400">Loading stats…</p>
+    </div>
+  );
+
+  if (fetchError) return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
+        <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <p className="font-medium text-slate-700 dark:text-slate-200 mb-1">Couldn&apos;t load stats</p>
+      <p className="text-sm text-slate-400 dark:text-slate-500">Check that the database is connected in Vercel.</p>
     </div>
   );
 

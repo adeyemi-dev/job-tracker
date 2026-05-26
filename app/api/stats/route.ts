@@ -12,6 +12,7 @@ function getMondayOf(date: Date): string {
 }
 
 export async function GET() {
+  try {
   const apps = (await sql`SELECT status, platform, applied_date FROM applications`) as {
     status: string;
     platform: string | null;
@@ -72,4 +73,8 @@ export async function GET() {
     weeklyTrend,
     thisWeekStart,
   });
+  } catch (e) {
+    console.error("GET /api/stats:", e);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
 }
