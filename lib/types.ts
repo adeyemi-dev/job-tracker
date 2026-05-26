@@ -78,6 +78,7 @@ export const PLATFORMS = [
   "Indeed",
   "NHS Jobs",
   "University Jobs",
+  "Find a Job (Gov UK)",
   "Glassdoor",
   "Reed",
   "Totaljobs",
