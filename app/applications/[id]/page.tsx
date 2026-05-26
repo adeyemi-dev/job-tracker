@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Application, ALL_STATUSES, Status, Interview, isOverdue } from "@/lib/types";
 import { getApp, updateApp, deleteApp, getInterviews } from "@/lib/store";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -11,9 +11,10 @@ import { InterviewTimeline } from "@/components/InterviewTimeline";
 export default function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [app, setApp] = useState<Application | null>(null);
   const [interviews, setInterviews] = useState<Interview[]>([]);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(searchParams.get("edit") === "1");
 
   useEffect(() => {
     const found = getApp(id);

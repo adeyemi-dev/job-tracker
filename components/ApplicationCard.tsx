@@ -71,6 +71,10 @@ export function ApplicationCard({ app, onDelete }: Props) {
               className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium transition-colors">
               View
             </Link>
+            <Link href={`/applications/${app.id}?edit=1`}
+              className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors">
+              Edit
+            </Link>
             <button onClick={() => onDelete(app.id)}
               className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 font-medium transition-colors">
               Delete
