@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,8 +19,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       redirect: false,
     });
     if (res?.ok) {
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } else {
       setError("Incorrect email or password.");
       setLoading(false);
