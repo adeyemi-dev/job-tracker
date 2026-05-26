@@ -7,6 +7,20 @@ import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 
+type SortKey = "newest" | "oldest" | "company-az" | "company-za" | "salary-high" | "status";
+
+function sortApps(apps: Application[], sort: SortKey): Application[] {
+  const s = [...apps];
+  switch (sort) {
+    case "newest":     return s.sort((a, b) => b.applied_date.localeCompare(a.applied_date));
+    case "oldest":     return s.sort((a, b) => a.applied_date.localeCompare(b.applied_date));
+    case "company-az": return s.sort((a, b) => a.company.localeCompare(b.company));
+    case "company-za": return s.sort((a, b) => b.company.localeCompare(a.company));
+    case "salary-high":return s.sort((a, b) => (b.salary_max ?? b.salary_min ?? 0) - (a.salary_max ?? a.salary_min ?? 0));
+    case "status":     return s.sort((a, b) => ALL_STATUSES.indexOf(a.status) - ALL_STATUSES.indexOf(b.status));
+  }
+}
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return { text: "Good morning", emoji: "☀️", sub: "Let's find that dream role today." };
@@ -51,7 +65,9 @@ function readView(): ViewMode {
 export default function Dashboard() {
   const [allApps, setAllApps] = useState<Application[]>([]);
   const [filter, setFilter] = useState<Status | "All">("All");
+  const [starredOnly, setStarredOnly] = useState(false);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
   const [view, setView] = useState<ViewMode>("list");
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -108,14 +124,25 @@ export default function Dashboard() {
   }
 
   function handleStatusChange(id: string, status: Status) {
-    updateApp(id, { status });
-    setAllApps((prev) => prev.map((a) => a.id === id ? { ...a, status } : a));
+    const updated = updateApp(id, { status });
+    setAllApps((prev) => prev.map((a) => a.id === id ? updated : a));
+  }
+
+  function handleStarToggle(id: string) {
+    const app = allApps.find((a) => a.id === id);
+    if (!app) return;
+    updateApp(id, { starred: !app.starred });
+    setAllApps((prev) => prev.map((a) => a.id === id ? { ...a, starred: !a.starred } : a));
   }
 
   const q = search.toLowerCase().trim();
-  const displayed = allApps
-    .filter((a) => filter === "All" || a.status === filter)
-    .filter((a) => !q || a.company.toLowerCase().includes(q) || a.role.toLowerCase().includes(q));
+  const displayed = sortApps(
+    allApps
+      .filter((a) => !starredOnly || a.starred)
+      .filter((a) => filter === "All" || a.status === filter)
+      .filter((a) => !q || a.company.toLowerCase().includes(q) || a.role.toLowerCase().includes(q)),
+    sort
+  );
 
   const overdueApps = allApps.filter(
     (a) => isOverdue(a.followup_date) && !["Saved", "In Progress", "Rejected", "Withdrawn", "Ghosted"].includes(a.status)
@@ -275,32 +302,59 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Search */}
+      {/* Search + Sort */}
       {allApps.length > 0 && (
-        <div className="relative mb-4">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by company or role…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-900 shadow-sm"
-          />
-          {search && (
-            <button onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
+        <div className="flex gap-2 mb-4">
+          <div className="relative flex-1">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by company or role…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-900 shadow-sm"
+            />
+            {search && (
+              <button onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm shrink-0"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="company-az">Company A–Z</option>
+            <option value="company-za">Company Z–A</option>
+            <option value="salary-high">Salary high–low</option>
+            <option value="status">By status</option>
+          </select>
         </div>
       )}
 
       {/* Filter tabs */}
       <div className="flex gap-1.5 flex-wrap mb-5">
+        <button
+          onClick={() => setStarredOnly((v) => !v)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
+            starredOnly
+              ? "bg-amber-400 text-white shadow-sm"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700"
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" fill={starredOnly ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          Starred
+        </button>
         {(["All", ...ALL_STATUSES] as const).map((s) => (
           <button
             key={s}
@@ -392,7 +446,7 @@ export default function Dashboard() {
       ) : (
         <div className="space-y-2.5">
           {displayed.map((app) => (
-            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} />
+            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} onStarToggle={handleStarToggle} />
           ))}
         </div>
       )}

@@ -17,9 +17,10 @@ interface Props {
   app: Application;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Status) => void;
+  onStarToggle: (id: string) => void;
 }
 
-export function ApplicationCard({ app, onDelete, onStatusChange }: Props) {
+export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle }: Props) {
   const initials = app.company
     .split(" ")
     .slice(0, 2)
@@ -58,6 +59,15 @@ export function ApplicationCard({ app, onDelete, onStatusChange }: Props) {
         {/* Main info */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => onStarToggle(app.id)}
+              title={app.starred ? "Unstar" : "Star"}
+              className={`shrink-0 transition-colors ${app.starred ? "text-amber-400 hover:text-amber-300" : "text-slate-300 dark:text-slate-600 hover:text-amber-400 dark:hover:text-amber-400"}`}
+            >
+              <svg className="w-4 h-4" fill={app.starred ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </button>
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
 
             {/* Clickable status badge with dropdown */}

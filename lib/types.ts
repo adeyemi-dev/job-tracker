@@ -89,6 +89,11 @@ export const PLATFORMS = [
 
 export type Platform = (typeof PLATFORMS)[number];
 
+export interface StatusHistoryEntry {
+  status: Status;
+  changed_at: string;
+}
+
 export interface Application {
   id: string;
   company: string;
@@ -108,6 +113,8 @@ export interface Application {
   currency: Currency | null;
   work_type: WorkType | null;
   contract_type: ContractType | null;
+  starred: boolean;
+  status_history: StatusHistoryEntry[];
   created_at: string;
   updated_at: string;
 }

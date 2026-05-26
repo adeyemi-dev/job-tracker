@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { Application, ALL_STATUSES, Status, Interview, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
+import { Application, ALL_STATUSES, Status, Interview, isOverdue, CURRENCY_SYMBOL, Currency, STATUS_DOT, StatusHistoryEntry } from "@/lib/types";
 import { getApp, updateApp, deleteApp, getInterviews } from "@/lib/store";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ApplicationForm } from "@/components/ApplicationForm";
@@ -113,6 +113,31 @@ export default function ApplicationDetail() {
               ))}
             </div>
           </div>
+
+          {/* Status history */}
+          {(app.status_history?.length ?? 0) > 1 && (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Status history</p>
+              <ol className="relative border-l-2 border-slate-100 dark:border-slate-800 ml-2 space-y-4">
+                {(app.status_history as StatusHistoryEntry[]).map((entry, i) => {
+                  const isLast = i === app.status_history.length - 1;
+                  return (
+                    <li key={i} className="ml-4">
+                      <span className={`absolute -left-[9px] w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${STATUS_DOT[entry.status]} ${isLast ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : ""}`} />
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className={`text-sm font-semibold ${isLast ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}>{entry.status}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+                          {new Date(entry.changed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          {" · "}
+                          {new Date(entry.changed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
 
           <InterviewTimeline applicationId={app.id} initial={interviews} />
 

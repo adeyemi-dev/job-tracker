@@ -1,4 +1,4 @@
-import { Application, Interview, InterviewType, Status, Currency, WorkType, ContractType } from "./types";
+import { Application, Interview, InterviewType, Status, Currency, WorkType, ContractType, StatusHistoryEntry } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 const APPS_KEY = "jt-apps";
@@ -45,6 +45,8 @@ export function createApp(data: Partial<Application>): Application {
     currency: (data.currency as Currency) ?? null,
     work_type: (data.work_type as WorkType) ?? null,
     contract_type: (data.contract_type as ContractType) ?? null,
+    starred: data.starred ?? false,
+    status_history: [{ status: (data.status as Status) ?? "Saved", changed_at: now }],
     created_at: now,
     updated_at: now,
   };
@@ -54,9 +56,17 @@ export function createApp(data: Partial<Application>): Application {
 
 export function updateApp(id: string, data: Partial<Application>): Application {
   const now = new Date().toISOString();
-  const apps = getApps().map((a) =>
-    a.id === id ? { ...a, ...data, id, updated_at: now } : a
-  );
+  const apps = getApps().map((a) => {
+    if (a.id !== id) return a;
+    const updated = { ...a, ...data, id, updated_at: now };
+    if (data.status && data.status !== a.status) {
+      const existing: StatusHistoryEntry[] = a.status_history?.length
+        ? a.status_history
+        : [{ status: a.status, changed_at: a.created_at }];
+      updated.status_history = [...existing, { status: data.status, changed_at: now }];
+    }
+    return updated;
+  });
   write(APPS_KEY, apps);
   return apps.find((a) => a.id === id)!;
 }
