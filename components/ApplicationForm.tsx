@@ -130,7 +130,7 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
       </div>
 
       {/* Compensation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className={labelCls}>Work type <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
           <select value={workType} onChange={(e) => setWorkType(e.target.value as WorkType | "")} className={inputCls}>
@@ -145,19 +145,24 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
             {CONTRACT_TYPES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-      </div>
-
-      <div>
-        <label className={labelCls}>Salary range <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
-        <div className="flex items-center gap-2">
-          <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className={`${inputCls} w-24 shrink-0`}>
+        <div>
+          <label className={labelCls}>Currency <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className={inputCls}>
             {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Min salary <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
           <input type="number" min={0} value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)}
-            className={inputCls} placeholder="Min" />
-          <span className="text-slate-400 shrink-0">–</span>
+            className={inputCls} placeholder="e.g. 30000" />
+        </div>
+        <div>
+          <label className={labelCls}>Max salary <span className="ml-1 text-slate-400 font-normal">(optional)</span></label>
           <input type="number" min={0} value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)}
-            className={inputCls} placeholder="Max" />
+            className={inputCls} placeholder="e.g. 45000" />
         </div>
       </div>
 
