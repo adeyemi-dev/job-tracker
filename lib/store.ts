@@ -103,3 +103,25 @@ export function deleteInterview(applicationId: string, id: string) {
   ivs[applicationId] = (ivs[applicationId] ?? []).filter((iv) => iv.id !== id);
   write(IVS_KEY, ivs);
 }
+
+// Daily goal & reminder settings
+
+const GOAL_KEY = "jt-goal";
+const REMINDER_TIME_KEY = "jt-reminder-time";
+const NOTIF_KEY = "jt-notif-enabled";
+
+export function getDailyGoal(): number { return read<number>(GOAL_KEY, 5); }
+export function saveDailyGoal(n: number) { write(GOAL_KEY, n); }
+
+export function getReminderTime(): string { return read<string>(REMINDER_TIME_KEY, "09:00"); }
+export function saveReminderTime(t: string) { write(REMINDER_TIME_KEY, t); }
+
+export function getNotifEnabled(): boolean { return read<boolean>(NOTIF_KEY, false); }
+export function saveNotifEnabled(v: boolean) { write(NOTIF_KEY, v); }
+
+export function getTodayCount(): number {
+  const today = new Date().toISOString().slice(0, 10);
+  return getApps().filter(
+    (a) => a.applied_date === today && !["Saved", "In Progress"].includes(a.status)
+  ).length;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Application, ALL_STATUSES, Status, STATUS_DOT, isOverdue } from "@/lib/types";
 import { ApplicationCard } from "@/components/ApplicationCard";
+import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { getApps, deleteApp } from "@/lib/store";
 
 function getGreeting() {
@@ -107,6 +108,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <DailyGoalBanner />
 
       {/* Stat cards */}
       {allApps.length > 0 && (
