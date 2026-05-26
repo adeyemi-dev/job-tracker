@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   getDailyGoal, saveDailyGoal,
   getReminderTime, saveReminderTime,
   getNotifEnabled, saveNotifEnabled,
   getTodayCount,
 } from "@/lib/store";
+import { ConfettiCelebration } from "./ConfettiCelebration";
 
 // iOS Safari does not support the Notification API outside of an installed PWA
 function getNotifSupport(): "supported" | "ios-browser" | "unsupported" {
@@ -36,6 +37,7 @@ async function sendSwMessage(msg: object) {
 export function DailyGoalBanner() {
   const [todayCount, setTodayCount] = useState(0);
   const [goal, setGoal] = useState(5);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [reminderTime, setReminderTime] = useState("09:00");
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -45,14 +47,24 @@ export function DailyGoalBanner() {
 
   useEffect(() => {
     support.current = getNotifSupport();
-    setTodayCount(getTodayCount());
-    setGoal(getDailyGoal());
+    const count = getTodayCount();
+    const g = getDailyGoal();
+    setTodayCount(count);
+    setGoal(g);
     setReminderTime(getReminderTime());
     setNotifEnabled(getNotifEnabled());
     if (support.current === "supported") {
       setPermission(Notification.permission);
-      // Register SW so it's ready
       getSwRegistration();
+    }
+
+    // Fire confetti once per day when goal is met
+    if (count >= g && g > 0) {
+      const key = `jt-confetti-${new Date().toISOString().slice(0, 10)}-${g}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        setTimeout(() => setShowConfetti(true), 400);
+      }
     }
   }, []);
 
@@ -153,6 +165,8 @@ export function DailyGoalBanner() {
           </button>
         </div>
       </div>
+
+      {showConfetti && <ConfettiCelebration onDone={() => setShowConfetti(false)} />}
 
       {/* Settings panel */}
       {showSettings && (
