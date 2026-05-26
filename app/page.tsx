@@ -5,7 +5,7 @@ import { Application, ALL_STATUSES, Status, STATUS_DOT, isOverdue } from "@/lib/
 import { ApplicationCard } from "@/components/ApplicationCard";
 import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { KanbanBoard } from "@/components/KanbanBoard";
-import { getApps, deleteApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
+import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -105,6 +105,11 @@ export default function Dashboard() {
     if (!confirm("Delete this application?")) return;
     deleteApp(id);
     setAllApps((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function handleStatusChange(id: string, status: Status) {
+    updateApp(id, { status });
+    setAllApps((prev) => prev.map((a) => a.id === id ? { ...a, status } : a));
   }
 
   const q = search.toLowerCase().trim();
@@ -387,7 +392,7 @@ export default function Dashboard() {
       ) : (
         <div className="space-y-2.5">
           {displayed.map((app) => (
-            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} />
+            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} />
           ))}
         </div>
       )}

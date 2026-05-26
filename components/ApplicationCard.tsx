@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Application, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
-import { StatusBadge } from "./StatusBadge";
+import { Application, ALL_STATUSES, Status, STATUS_COLORS, STATUS_DOT, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 
 function formatSalary(app: Application): string | null {
   if (!app.salary_min && !app.salary_max) return null;
@@ -16,9 +16,10 @@ function formatSalary(app: Application): string | null {
 interface Props {
   app: Application;
   onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: Status) => void;
 }
 
-export function ApplicationCard({ app, onDelete }: Props) {
+export function ApplicationCard({ app, onDelete, onStatusChange }: Props) {
   const initials = app.company
     .split(" ")
     .slice(0, 2)
@@ -28,6 +29,19 @@ export function ApplicationCard({ app, onDelete }: Props) {
 
   const overdue = isOverdue(app.followup_date) && !["Rejected", "Withdrawn", "Ghosted"].includes(app.status);
   const salary = formatSalary(app);
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   return (
     <div className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-all duration-200 ${
@@ -45,7 +59,40 @@ export function ApplicationCard({ app, onDelete }: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
-            <StatusBadge status={app.status} />
+
+            {/* Clickable status badge with dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setOpen((o) => !o)}
+                className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-opacity hover:opacity-80 ${STATUS_COLORS[app.status]}`}
+              >
+                {app.status}
+                <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {open && (
+                <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-slate-950 py-1 min-w-[150px]">
+                  {ALL_STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { onStatusChange(app.id, s); setOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60 ${s === app.status ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
+                      {s}
+                      {s === app.status && (
+                        <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {app.platform && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
                 {app.platform}
