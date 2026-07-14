@@ -3,6 +3,7 @@ export type Status =
   | "In Progress"
   | "Applied"
   | "Phone Screen"
+  | "Assessment Test"
   | "Interview"
   | "Offer"
   | "Rejected"
@@ -14,6 +15,7 @@ export const ALL_STATUSES: Status[] = [
   "In Progress",
   "Applied",
   "Phone Screen",
+  "Assessment Test",
   "Interview",
   "Offer",
   "Rejected",
@@ -26,6 +28,7 @@ export const STATUS_COLORS: Record<Status, string> = {
   "In Progress": "bg-purple-50 text-purple-700 ring-1 ring-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:ring-purple-800",
   Applied: "bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800",
   "Phone Screen": "bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:ring-violet-800",
+  "Assessment Test": "bg-orange-50 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800",
   Interview: "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
   Offer: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800",
   Rejected: "bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-300 dark:ring-red-800",
@@ -38,6 +41,7 @@ export const STATUS_DOT: Record<Status, string> = {
   "In Progress": "bg-purple-400",
   Applied: "bg-sky-500",
   "Phone Screen": "bg-violet-500",
+  "Assessment Test": "bg-orange-500",
   Interview: "bg-amber-500",
   Offer: "bg-emerald-500",
   Rejected: "bg-red-500",
