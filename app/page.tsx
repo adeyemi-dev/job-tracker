@@ -74,9 +74,12 @@ export default function Dashboard() {
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setAllApps(getApps());
-    setView(readView());
-    setLoaded(true);
+    async function load() {
+      setAllApps(await getApps());
+      setView(readView());
+      setLoaded(true);
+    }
+    load();
   }, []);
 
   function switchView(v: ViewMode) {
@@ -84,16 +87,16 @@ export default function Dashboard() {
     localStorage.setItem("jt-view", v);
   }
 
-  function handleExportJSON() {
-    const blob = new Blob([exportJSON()], { type: "application/json" });
+  async function handleExportJSON() {
+    const blob = new Blob([await exportJSON()], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `jobtracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
   }
 
-  function handleExportCSV() {
-    const blob = new Blob([exportCSV()], { type: "text/csv" });
+  async function handleExportCSV() {
+    const blob = new Blob([await exportCSV()], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `jobtracker-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -104,10 +107,10 @@ export default function Dashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
-        const { count } = importJSON(ev.target?.result as string);
-        setAllApps(getApps());
+        const { count } = await importJSON(ev.target?.result as string);
+        setAllApps(await getApps());
         setImportMsg(`Imported ${count} application${count !== 1 ? "s" : ""}`);
         setTimeout(() => setImportMsg(null), 3000);
       } catch {
@@ -119,21 +122,21 @@ export default function Dashboard() {
     e.target.value = "";
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm("Delete this application?")) return;
-    deleteApp(id);
+    await deleteApp(id);
     setAllApps((prev) => prev.filter((a) => a.id !== id));
   }
 
-  function handleStatusChange(id: string, status: Status) {
-    const updated = updateApp(id, { status });
+  async function handleStatusChange(id: string, status: Status) {
+    const updated = await updateApp(id, { status });
     setAllApps((prev) => prev.map((a) => a.id === id ? updated : a));
   }
 
-  function handleStarToggle(id: string) {
+  async function handleStarToggle(id: string) {
     const app = allApps.find((a) => a.id === id);
     if (!app) return;
-    updateApp(id, { starred: !app.starred });
+    await updateApp(id, { starred: !app.starred });
     setAllApps((prev) => prev.map((a) => a.id === id ? { ...a, starred: !a.starred } : a));
   }
 

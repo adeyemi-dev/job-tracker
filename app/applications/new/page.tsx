@@ -8,8 +8,8 @@ import { createApp } from "@/lib/store";
 export default function NewApplication() {
   const router = useRouter();
 
-  function handleSubmit(data: Partial<Application>) {
-    const created = createApp(data);
+  async function handleSubmit(data: Partial<Application>) {
+    const created = await createApp(data);
     router.push(`/applications/${created.id}`);
   }
 

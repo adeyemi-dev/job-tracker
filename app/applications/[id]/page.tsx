@@ -17,26 +17,29 @@ export default function ApplicationDetail() {
   const [editing, setEditing] = useState(searchParams.get("edit") === "1");
 
   useEffect(() => {
-    const found = getApp(id);
-    if (!found) { router.replace("/"); return; }
-    setApp(found);
-    setInterviews(getInterviews(id));
+    async function load() {
+      const found = await getApp(id);
+      if (!found) { router.replace("/"); return; }
+      setApp(found);
+      setInterviews(await getInterviews(id));
+    }
+    load();
   }, [id, router]);
 
-  function handleUpdate(data: Partial<Application>) {
-    const updated = updateApp(id, data);
+  async function handleUpdate(data: Partial<Application>) {
+    const updated = await updateApp(id, data);
     setApp(updated);
     setEditing(false);
   }
 
-  function handleStatusChange(status: Status) {
-    const updated = updateApp(id, { status });
+  async function handleStatusChange(status: Status) {
+    const updated = await updateApp(id, { status });
     setApp(updated);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!confirm("Delete this application?")) return;
-    deleteApp(id);
+    await deleteApp(id);
     router.push("/");
   }
 

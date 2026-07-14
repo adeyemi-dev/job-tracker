@@ -18,9 +18,9 @@ export function InterviewTimeline({ applicationId, initial }: { applicationId: s
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY);
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.date) return;
-    const iv = addInterview(applicationId, {
+    const iv = await addInterview(applicationId, {
       type: form.type,
       date: form.date,
       interviewer: form.interviewer || null,
@@ -31,8 +31,8 @@ export function InterviewTimeline({ applicationId, initial }: { applicationId: s
     setShowForm(false);
   }
 
-  function handleSaveEdit(id: string) {
-    const updated = updateInterview(applicationId, id, {
+  async function handleSaveEdit(id: string) {
+    const updated = await updateInterview(applicationId, id, {
       type: editForm.type,
       date: editForm.date,
       interviewer: editForm.interviewer || null,
@@ -42,9 +42,9 @@ export function InterviewTimeline({ applicationId, initial }: { applicationId: s
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm("Remove this interview?")) return;
-    deleteInterview(applicationId, id);
+    await deleteInterview(applicationId, id);
     setInterviews((prev) => prev.filter((i) => i.id !== id));
   }
 

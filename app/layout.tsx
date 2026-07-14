@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
+"use client";
+
 import "./globals.css";
 import { ThemeToggle } from "@/components/ThemeToggle";
-
-export const metadata: Metadata = {
-  title: "Job Tracker",
-  description: "Track your job applications",
-};
+import { signOut } from "@/lib/store";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isLoginPage = pathname === "/login";
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body className="bg-slate-50 dark:bg-slate-950 min-h-screen transition-colors duration-200">
-        <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-md">
+        {isLoginPage ? null : <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
             <div className="flex items-center gap-4 sm:gap-6">
               <a href="/" className="flex items-center gap-2.5">
@@ -42,6 +43,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <button
+                onClick={async () => { await signOut(); router.push("/login"); router.refresh(); }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              >
+                Sign out
+              </button>
               <a
                 href="/applications/new"
                 className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50"
@@ -53,18 +60,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
             </div>
           </div>
-        </nav>
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        </nav>}
+        <main className={isLoginPage ? "" : "max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
           {children}
         </main>
-        <footer className="border-t border-slate-200/80 dark:border-slate-800 mt-8">
+        {!isLoginPage && <footer className="border-t border-slate-200/80 dark:border-slate-800 mt-8">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
             <p className="text-xs text-slate-400 dark:text-slate-600">
               Developed by{" "}
               <span className="font-semibold text-slate-500 dark:text-slate-500">Afeez Laguda</span>
             </p>
           </div>
-        </footer>
+        </footer>}
       </body>
     </html>
   );

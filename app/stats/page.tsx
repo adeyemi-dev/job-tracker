@@ -55,8 +55,8 @@ function getMondayOf(date: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function computeStats(): StatsData {
-  const apps = getApps();
+async function computeStats(): Promise<StatsData> {
+  const apps = await getApps();
   const now = new Date();
   const thisWeekStart = getMondayOf(now);
   const lastWeekStart = getMondayOf(new Date(now.getTime() - 7 * 86400000));
@@ -104,7 +104,7 @@ function computeStats(): StatsData {
       if (days >= 0 && days <= 365) daysToHearList.push(days);
     } else {
       // Fall back to first interview if available
-      const ivs = getInterviews(a.id);
+      const ivs = await getInterviews(a.id);
       if (ivs.length > 0) {
         const days = Math.round((new Date(ivs[0].date).getTime() - new Date(a.applied_date).getTime()) / 86400000);
         if (days >= 0 && days <= 365) daysToHearList.push(days);
@@ -148,7 +148,7 @@ function computeStats(): StatsData {
 export default function StatsPage() {
   const [data, setData] = useState<StatsData | null>(null);
 
-  useEffect(() => { setData(computeStats()); }, []);
+  useEffect(() => { computeStats().then(setData); }, []);
 
   if (!data || data.total === 0) return (
     <div className="flex flex-col items-center justify-center py-24 text-center">

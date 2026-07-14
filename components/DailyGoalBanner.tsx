@@ -48,11 +48,8 @@ export function DailyGoalBanner() {
 
   useEffect(() => {
     support.current = getNotifSupport();
-    const count = getTodayCount();
     const g = getDailyGoal();
-    setTodayCount(count);
     setGoal(g);
-    setStreak(getStreakData());
     setReminderTime(getReminderTime());
     setNotifEnabled(getNotifEnabled());
     if (support.current === "supported") {
@@ -60,15 +57,22 @@ export function DailyGoalBanner() {
       getSwRegistration();
     }
 
-    // Fire confetti once per day when goal is met, with bonus on streak milestones
-    if (count >= g && g > 0) {
-      const today = new Date().toISOString().slice(0, 10);
-      const key = `jt-confetti-${today}-${g}`;
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
-        setTimeout(() => setShowConfetti(true), 400);
+    async function loadCounts() {
+      const count = await getTodayCount();
+      const streakData = await getStreakData();
+      setTodayCount(count);
+      setStreak(streakData);
+
+      if (count >= g && g > 0) {
+        const today = new Date().toISOString().slice(0, 10);
+        const key = `jt-confetti-${today}-${g}`;
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, "1");
+          setTimeout(() => setShowConfetti(true), 400);
+        }
       }
     }
+    loadCounts();
   }, []);
 
   // Re-schedule with SW whenever settings change
@@ -83,13 +87,11 @@ export function DailyGoalBanner() {
     fire.setHours(h, m, 0, 0);
     if (fire <= now) return;
 
-    const count = getTodayCount();
-    const g = getDailyGoal();
     sendSwMessage({
       type: "SCHEDULE",
       delayMs: fire.getTime() - now.getTime(),
       title: "JobTracker — Daily reminder 🎯",
-      body: `You've applied to ${count} of ${g} jobs today. ${g - count} more to go!`,
+      body: `You've applied to ${todayCount} of ${goal} jobs today. ${goal - todayCount} more to go!`,
     });
   }, [notifEnabled, reminderTime, goal]);
 

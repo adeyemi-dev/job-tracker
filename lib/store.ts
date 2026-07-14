@@ -1,149 +1,258 @@
+import { createClient } from "./supabase/client";
 import { Application, Interview, InterviewType, Status, Currency, WorkType, ContractType, StatusHistoryEntry } from "./types";
-import { v4 as uuidv4 } from "uuid";
 
-const APPS_KEY = "jt-apps";
-const IVS_KEY = "jt-interviews";
+// ─── localStorage helpers (preferences only) ────────────────────────────────
 
-function read<T>(key: string, fallback: T): T {
+function lsRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try { return JSON.parse(localStorage.getItem(key) ?? "") as T; }
   catch { return fallback; }
 }
-
-function write(key: string, value: unknown) {
+function lsWrite(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-// Applications
+// ─── Row → Application ───────────────────────────────────────────────────────
 
-export function getApps(): Application[] {
-  return read<Application[]>(APPS_KEY, []);
-}
-
-export function getApp(id: string): Application | null {
-  return getApps().find((a) => a.id === id) ?? null;
-}
-
-export function createApp(data: Partial<Application>): Application {
-  const now = new Date().toISOString();
-  const app: Application = {
-    id: uuidv4(),
-    company: data.company ?? "",
-    role: data.role ?? "",
-    job_url: data.job_url ?? null,
-    status: (data.status as Status) ?? "Saved",
-    platform: data.platform ?? null,
-    applied_date: data.applied_date ?? now.slice(0, 10),
-    followup_date: data.followup_date ?? null,
-    notes: data.notes ?? null,
-    cv_file: data.cv_file ?? null,
-    cv_url: data.cv_url ?? null,
-    cl_file: data.cl_file ?? null,
-    cl_url: data.cl_url ?? null,
-    salary_min: data.salary_min ?? null,
-    salary_max: data.salary_max ?? null,
-    currency: (data.currency as Currency) ?? null,
-    work_type: (data.work_type as WorkType) ?? null,
-    contract_type: (data.contract_type as ContractType) ?? null,
-    starred: data.starred ?? false,
-    status_history: [{ status: (data.status as Status) ?? "Saved", changed_at: now }],
-    created_at: now,
-    updated_at: now,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapApp(row: any): Application {
+  return {
+    id: row.id,
+    company: row.company,
+    role: row.role,
+    job_url: row.job_url ?? null,
+    status: row.status as Status,
+    platform: row.platform ?? null,
+    applied_date: row.applied_date,
+    followup_date: row.followup_date ?? null,
+    notes: row.notes ?? null,
+    cv_file: row.cv_file ?? null,
+    cv_url: row.cv_url ?? null,
+    cl_file: row.cl_file ?? null,
+    cl_url: row.cl_url ?? null,
+    salary_min: row.salary_min ?? null,
+    salary_max: row.salary_max ?? null,
+    currency: (row.currency ?? null) as Currency | null,
+    work_type: (row.work_type ?? null) as WorkType | null,
+    contract_type: (row.contract_type ?? null) as ContractType | null,
+    starred: row.starred ?? false,
+    status_history: (row.status_history ?? []) as StatusHistoryEntry[],
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
-  write(APPS_KEY, [app, ...getApps()]);
-  return app;
 }
 
-export function updateApp(id: string, data: Partial<Application>): Application {
-  const now = new Date().toISOString();
-  const apps = getApps().map((a) => {
-    if (a.id !== id) return a;
-    const updated = { ...a, ...data, id, updated_at: now };
-    if (data.status && data.status !== a.status) {
-      const existing: StatusHistoryEntry[] = a.status_history?.length
-        ? a.status_history
-        : [{ status: a.status, changed_at: a.created_at }];
-      updated.status_history = [...existing, { status: data.status, changed_at: now }];
-    }
-    return updated;
-  });
-  write(APPS_KEY, apps);
-  return apps.find((a) => a.id === id)!;
-}
-
-export function deleteApp(id: string) {
-  write(APPS_KEY, getApps().filter((a) => a.id !== id));
-  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
-  delete ivs[id];
-  write(IVS_KEY, ivs);
-}
-
-// Interviews
-
-export function getInterviews(applicationId: string): Interview[] {
-  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
-  return (ivs[applicationId] ?? []).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-export function addInterview(applicationId: string, data: { type: InterviewType; date: string; interviewer: string | null; notes: string | null }): Interview {
-  const now = new Date().toISOString();
-  const existing = getInterviews(applicationId);
-  const iv: Interview = {
-    id: uuidv4(),
-    application_id: applicationId,
-    round: existing.length + 1,
-    type: data.type,
-    date: data.date,
-    interviewer: data.interviewer,
-    notes: data.notes,
-    created_at: now,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapInterview(row: any): Interview {
+  return {
+    id: row.id,
+    application_id: row.application_id,
+    round: row.round,
+    type: row.type as InterviewType,
+    date: row.date,
+    interviewer: row.interviewer ?? null,
+    notes: row.notes ?? null,
+    created_at: row.created_at,
   };
-  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
-  ivs[applicationId] = [...(ivs[applicationId] ?? []), iv];
-  write(IVS_KEY, ivs);
-  return iv;
 }
 
-export function updateInterview(applicationId: string, id: string, data: Partial<Interview>): Interview {
-  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
-  ivs[applicationId] = (ivs[applicationId] ?? []).map((iv) =>
-    iv.id === id ? { ...iv, ...data } : iv
-  );
-  write(IVS_KEY, ivs);
-  return ivs[applicationId].find((iv) => iv.id === id)!;
+// ─── Applications ────────────────────────────────────────────────────────────
+
+export async function getApps(): Promise<Application[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("applications")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(mapApp);
 }
 
-export function deleteInterview(applicationId: string, id: string) {
-  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
-  ivs[applicationId] = (ivs[applicationId] ?? []).filter((iv) => iv.id !== id);
-  write(IVS_KEY, ivs);
+export async function getApp(id: string): Promise<Application | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("applications")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) return null;
+  return mapApp(data);
 }
 
-// Daily goal & reminder settings
+export async function createApp(data: Partial<Application>): Promise<Application> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
-const GOAL_KEY = "jt-goal";
-const REMINDER_TIME_KEY = "jt-reminder-time";
-const NOTIF_KEY = "jt-notif-enabled";
+  const now = new Date().toISOString();
+  const status = (data.status as Status) ?? "Saved";
 
-export function getDailyGoal(): number { return read<number>(GOAL_KEY, 5); }
-export function saveDailyGoal(n: number) { write(GOAL_KEY, n); }
+  const { data: row, error } = await supabase
+    .from("applications")
+    .insert({
+      user_id: user.id,
+      company: data.company ?? "",
+      role: data.role ?? "",
+      job_url: data.job_url ?? null,
+      status,
+      platform: data.platform ?? null,
+      applied_date: data.applied_date ?? now.slice(0, 10),
+      followup_date: data.followup_date ?? null,
+      notes: data.notes ?? null,
+      cv_file: data.cv_file ?? null,
+      cv_url: data.cv_url ?? null,
+      cl_file: data.cl_file ?? null,
+      cl_url: data.cl_url ?? null,
+      salary_min: data.salary_min ?? null,
+      salary_max: data.salary_max ?? null,
+      currency: data.currency ?? null,
+      work_type: data.work_type ?? null,
+      contract_type: data.contract_type ?? null,
+      starred: data.starred ?? false,
+      status_history: [{ status, changed_at: now }],
+    })
+    .select()
+    .single();
 
-export function getReminderTime(): string { return read<string>(REMINDER_TIME_KEY, "09:00"); }
-export function saveReminderTime(t: string) { write(REMINDER_TIME_KEY, t); }
-
-export function getNotifEnabled(): boolean { return read<boolean>(NOTIF_KEY, false); }
-export function saveNotifEnabled(v: boolean) { write(NOTIF_KEY, v); }
-
-// Export / Import
-
-export function exportJSON(): string {
-  const apps = getApps();
-  const ivs = read<Record<string, Interview[]>>(IVS_KEY, {});
-  return JSON.stringify({ apps, interviews: ivs, exported_at: new Date().toISOString() }, null, 2);
+  if (error) throw error;
+  return mapApp(row);
 }
 
-export function exportCSV(): string {
-  const apps = getApps();
+export async function updateApp(id: string, data: Partial<Application>): Promise<Application> {
+  const supabase = createClient();
+  const now = new Date().toISOString();
+
+  const { data: current, error: fetchError } = await supabase
+    .from("applications")
+    .select("status, status_history")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw fetchError;
+
+  const updates: Record<string, unknown> = { ...data, updated_at: now };
+
+  if (data.status && data.status !== current.status) {
+    const existing: StatusHistoryEntry[] = current.status_history?.length
+      ? current.status_history
+      : [{ status: current.status, changed_at: now }];
+    updates.status_history = [...existing, { status: data.status, changed_at: now }];
+  }
+
+  const { data: row, error } = await supabase
+    .from("applications")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapApp(row);
+}
+
+export async function deleteApp(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("applications").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ─── Interviews ──────────────────────────────────────────────────────────────
+
+export async function getInterviews(applicationId: string): Promise<Interview[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("interviews")
+    .select("*")
+    .eq("application_id", applicationId)
+    .order("date", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(mapInterview);
+}
+
+export async function getAllInterviews(): Promise<Record<string, Interview[]>> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("interviews").select("*");
+  if (error) throw error;
+  const result: Record<string, Interview[]> = {};
+  for (const row of data ?? []) {
+    const iv = mapInterview(row);
+    if (!result[iv.application_id]) result[iv.application_id] = [];
+    result[iv.application_id].push(iv);
+  }
+  return result;
+}
+
+export async function addInterview(
+  applicationId: string,
+  data: { type: InterviewType; date: string; interviewer: string | null; notes: string | null }
+): Promise<Interview> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const existing = await getInterviews(applicationId);
+  const now = new Date().toISOString();
+
+  const { data: row, error } = await supabase
+    .from("interviews")
+    .insert({
+      user_id: user.id,
+      application_id: applicationId,
+      round: existing.length + 1,
+      type: data.type,
+      date: data.date,
+      interviewer: data.interviewer,
+      notes: data.notes,
+      created_at: now,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapInterview(row);
+}
+
+export async function updateInterview(
+  applicationId: string,
+  id: string,
+  data: Partial<Interview>
+): Promise<Interview> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("interviews")
+    .update({
+      type: data.type,
+      date: data.date,
+      interviewer: data.interviewer,
+      notes: data.notes,
+    })
+    .eq("id", id)
+    .eq("application_id", applicationId)
+    .select()
+    .single();
+  if (error) throw error;
+  return mapInterview(row);
+}
+
+export async function deleteInterview(applicationId: string, id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("interviews")
+    .delete()
+    .eq("id", id)
+    .eq("application_id", applicationId);
+  if (error) throw error;
+}
+
+// ─── Export / Import ─────────────────────────────────────────────────────────
+
+export async function exportJSON(): Promise<string> {
+  const apps = await getApps();
+  const interviews = await getAllInterviews();
+  return JSON.stringify({ apps, interviews, exported_at: new Date().toISOString() }, null, 2);
+}
+
+export async function exportCSV(): Promise<string> {
+  const apps = await getApps();
   const headers: (keyof Application)[] = [
     "id", "company", "role", "status", "platform", "applied_date", "followup_date",
     "job_url", "notes", "cv_url", "cl_url",
@@ -159,23 +268,93 @@ export function exportCSV(): string {
   return [headers.join(","), ...rows].join("\n");
 }
 
-export function importJSON(json: string): { count: number } {
-  const data = JSON.parse(json) as { apps?: Application[]; interviews?: Record<string, Interview[]> };
-  if (!data.apps || !Array.isArray(data.apps)) throw new Error("Invalid backup file");
-  write(APPS_KEY, data.apps);
-  if (data.interviews) write(IVS_KEY, data.interviews);
-  return { count: data.apps.length };
+export async function importJSON(json: string): Promise<{ count: number }> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const parsed = JSON.parse(json) as { apps?: Application[]; interviews?: Record<string, Interview[]> };
+  if (!parsed.apps || !Array.isArray(parsed.apps)) throw new Error("Invalid backup file");
+
+  const appsToInsert = parsed.apps.map((a) => ({
+    id: a.id,
+    user_id: user.id,
+    company: a.company,
+    role: a.role,
+    job_url: a.job_url,
+    status: a.status,
+    platform: a.platform,
+    applied_date: a.applied_date,
+    followup_date: a.followup_date,
+    notes: a.notes,
+    cv_file: a.cv_file,
+    cv_url: a.cv_url,
+    cl_file: a.cl_file,
+    cl_url: a.cl_url,
+    salary_min: a.salary_min,
+    salary_max: a.salary_max,
+    currency: a.currency,
+    work_type: a.work_type,
+    contract_type: a.contract_type,
+    starred: a.starred ?? false,
+    status_history: a.status_history ?? [],
+    created_at: a.created_at,
+    updated_at: a.updated_at,
+  }));
+
+  const { error: appsError } = await supabase
+    .from("applications")
+    .upsert(appsToInsert, { onConflict: "id" });
+  if (appsError) throw appsError;
+
+  if (parsed.interviews) {
+    const ivsToInsert = Object.entries(parsed.interviews).flatMap(([appId, ivs]) =>
+      ivs.map((iv) => ({
+        id: iv.id,
+        user_id: user.id,
+        application_id: appId,
+        round: iv.round,
+        type: iv.type,
+        date: iv.date,
+        interviewer: iv.interviewer,
+        notes: iv.notes,
+        created_at: iv.created_at,
+      }))
+    );
+    if (ivsToInsert.length > 0) {
+      const { error: ivsError } = await supabase
+        .from("interviews")
+        .upsert(ivsToInsert, { onConflict: "id" });
+      if (ivsError) throw ivsError;
+    }
+  }
+
+  return { count: parsed.apps.length };
 }
 
-export function getTodayCount(): number {
+// ─── Daily goal & streak (preferences stay in localStorage) ─────────────────
+
+const GOAL_KEY = "jt-goal";
+const REMINDER_TIME_KEY = "jt-reminder-time";
+const NOTIF_KEY = "jt-notif-enabled";
+
+export function getDailyGoal(): number { return lsRead<number>(GOAL_KEY, 5); }
+export function saveDailyGoal(n: number) { lsWrite(GOAL_KEY, n); }
+export function getReminderTime(): string { return lsRead<string>(REMINDER_TIME_KEY, "09:00"); }
+export function saveReminderTime(t: string) { lsWrite(REMINDER_TIME_KEY, t); }
+export function getNotifEnabled(): boolean { return lsRead<boolean>(NOTIF_KEY, false); }
+export function saveNotifEnabled(v: boolean) { lsWrite(NOTIF_KEY, v); }
+
+export async function getTodayCount(): Promise<number> {
+  const apps = await getApps();
   const today = new Date().toISOString().slice(0, 10);
-  return getApps().filter(
+  return apps.filter(
     (a) => a.applied_date === today && !["Saved", "In Progress"].includes(a.status)
   ).length;
 }
 
-export function getStreakData(): { current: number; best: number } {
-  const apps = getApps();
+export async function getStreakData(): Promise<{ current: number; best: number }> {
+  const apps = await getApps();
   const goal = getDailyGoal();
   if (goal === 0 || apps.length === 0) return { current: 0, best: 0 };
 
@@ -195,15 +374,12 @@ export function getStreakData(): { current: number; best: number } {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-
-  // Current streak: consecutive days ending today (or yesterday if today not yet met)
   let current = 0;
   let cursor = metGoal(today) ? today : prevDay(today);
   if (metGoal(today)) current = 1;
   cursor = prevDay(cursor);
   while (metGoal(cursor) && current <= 3650) { current++; cursor = prevDay(cursor); }
 
-  // Best streak: scan all goal-met days in order
   const metDays = Object.keys(countByDay).filter(metGoal).sort();
   let best = current;
   let run = 0;
@@ -220,4 +396,11 @@ export function getStreakData(): { current: number; best: number } {
   }
 
   return { current, best };
+}
+
+// ─── Sign out ────────────────────────────────────────────────────────────────
+
+export async function signOut(): Promise<void> {
+  const supabase = createClient();
+  await supabase.auth.signOut();
 }
