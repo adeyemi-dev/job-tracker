@@ -71,6 +71,8 @@ export default function Dashboard() {
   const [sort, setSort] = useState<SortKey>("newest");
   const [view, setView] = useState<ViewMode>("list");
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [localDataCount, setLocalDataCount] = useState(0);
+  const [migrating, setMigrating] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -78,9 +80,32 @@ export default function Dashboard() {
       setAllApps(await getApps());
       setView(readView());
       setLoaded(true);
+      // Check for old localStorage data to migrate
+      try {
+        const old = JSON.parse(localStorage.getItem("jt-apps") ?? "[]");
+        if (Array.isArray(old) && old.length > 0) setLocalDataCount(old.length);
+      } catch { /* no local data */ }
     }
     load();
   }, []);
+
+  async function handleMigrateLocal() {
+    setMigrating(true);
+    try {
+      const apps = JSON.parse(localStorage.getItem("jt-apps") ?? "[]");
+      const interviews = JSON.parse(localStorage.getItem("jt-interviews") ?? "{}");
+      const json = JSON.stringify({ apps, interviews });
+      const { count } = await importJSON(json);
+      setAllApps(await getApps());
+      setLocalDataCount(0);
+      setImportMsg(`Migrated ${count} application${count !== 1 ? "s" : ""} from this device`);
+      setTimeout(() => setImportMsg(null), 4000);
+    } catch {
+      setImportMsg("Migration failed — try the JSON import instead");
+      setTimeout(() => setImportMsg(null), 4000);
+    }
+    setMigrating(false);
+  }
 
   function switchView(v: ViewMode) {
     setView(v);
@@ -199,6 +224,26 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {localDataCount > 0 && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              Found {localDataCount} application{localDataCount !== 1 ? "s" : ""} saved on this device
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              Click to migrate them to your account so they show up everywhere.
+            </p>
+          </div>
+          <button
+            onClick={handleMigrateLocal}
+            disabled={migrating}
+            className="shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+          >
+            {migrating ? "Migrating…" : "Migrate now"}
+          </button>
+        </div>
+      )}
 
       <DailyGoalBanner />
 
