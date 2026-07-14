@@ -27,7 +27,9 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
   const [platformCustom, setPlatformCustom] = useState(isStoredCustom ? storedPlatform : "");
 
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [cvFile, setCvFile] = useState<string | null>(initial?.cv_file ?? null);
   const [cvUrl, setCvUrl] = useState<string | null>(initial?.cv_url ?? null);
+  const [clFile, setClFile] = useState<string | null>(initial?.cl_file ?? null);
   const [clUrl, setClUrl] = useState<string | null>(initial?.cl_url ?? null);
   const [workType, setWorkType] = useState<WorkType | "">(initial?.work_type ?? "");
   const [contractType, setContractType] = useState<ContractType | "">(initial?.contract_type ?? "");
@@ -55,7 +57,9 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
       applied_date: appliedDate,
       followup_date: followupDate || null,
       notes: notes.trim() || null,
+      cv_file: cvFile,
       cv_url: cvUrl,
+      cl_file: clFile,
       cl_url: clUrl,
       work_type: workType || null,
       contract_type: contractType || null,
@@ -173,8 +177,18 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-        <FileOrLinkInput label="CV link" currentUrl={cvUrl} onUrlChange={setCvUrl} />
-        <FileOrLinkInput label="Cover letter link" currentUrl={clUrl} onUrlChange={setClUrl} />
+        <FileOrLinkInput
+          label="CV"
+          currentFile={cvFile}
+          currentUrl={cvUrl}
+          onChange={(file, url) => { setCvFile(file); setCvUrl(url); }}
+        />
+        <FileOrLinkInput
+          label="Cover letter"
+          currentFile={clFile}
+          currentUrl={clUrl}
+          onChange={(file, url) => { setClFile(file); setClUrl(url); }}
+        />
       </div>
 
       {error && (
