@@ -106,7 +106,7 @@ export function InterviewTimeline({ applicationId, initial }: { applicationId: s
                         {iv.interviewer && <p className="text-xs text-slate-500 mt-1">with {iv.interviewer}</p>}
                         {iv.notes && <p className="text-xs text-slate-600 mt-1.5 whitespace-pre-wrap leading-relaxed">{iv.notes}</p>}
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <div className="flex gap-1 shrink-0">
                         <button onClick={() => { setEditingId(iv.id); setEditForm({ type: iv.type, date: iv.date, interviewer: iv.interviewer ?? "", notes: iv.notes ?? "" }); }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-600 transition-colors">
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

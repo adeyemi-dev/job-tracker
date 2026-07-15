@@ -43,6 +43,13 @@ export default function ApplicationDetail() {
     router.push("/");
   }
 
+  async function handleDeleteHistoryEntry(index: number) {
+    if (!app) return;
+    const newHistory = app.status_history.filter((_, i) => i !== index);
+    const updated = await updateApp(id, { status_history: newHistory });
+    setApp(updated);
+  }
+
   if (!app) return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
       <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -125,16 +132,27 @@ export default function ApplicationDetail() {
                 {(app.status_history as StatusHistoryEntry[]).map((entry, i) => {
                   const isLast = i === app.status_history.length - 1;
                   return (
-                    <li key={i} className="ml-4">
-                      <span className={`absolute -left-[9px] w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${STATUS_DOT[entry.status]} ${isLast ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : ""}`} />
-                      <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className={`text-sm font-semibold ${isLast ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}>{entry.status}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
-                          {new Date(entry.changed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                          {" · "}
-                          {new Date(entry.changed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
+                    <li key={i} className="ml-4 flex items-center justify-between gap-2">
+                      <div>
+                        <span className={`absolute -left-[9px] w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${STATUS_DOT[entry.status]} ${isLast ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : ""}`} />
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className={`text-sm font-semibold ${isLast ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}>{entry.status}</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+                            {new Date(entry.changed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                            {" · "}
+                            {new Date(entry.changed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => handleDeleteHistoryEntry(i)}
+                        className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0 p-1"
+                        title="Remove this entry"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </li>
                   );
                 })}
