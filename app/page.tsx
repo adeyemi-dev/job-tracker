@@ -10,6 +10,7 @@ import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
+import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown } from "lucide-react";
 
 type SortKey = "newest" | "oldest" | "company-az" | "company-za" | "salary-high" | "status";
 
@@ -33,10 +34,10 @@ function getGreeting() {
 }
 
 const STAT_STATUSES = [
-  { label: "In progress",  key: "Active"    as const, accent: "#6366f1", light: "bg-indigo-50  dark:bg-indigo-900/30",  text: "text-indigo-700 dark:text-indigo-300",  icon: "M13 10V3L4 14h7v7l9-11h-7z" },
-  { label: "Interviews",   key: "Interview" as const, accent: "#f59e0b", light: "bg-amber-50   dark:bg-amber-900/30",   text: "text-amber-700  dark:text-amber-300",   icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
-  { label: "Offers",       key: "Offer"     as const, accent: "#10b981", light: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
-  { label: "Rejected",     key: "Rejected"  as const, accent: "#ef4444", light: "bg-red-50    dark:bg-red-900/30",     text: "text-red-700    dark:text-red-300",     icon: "M6 18L18 6M6 6l12 12" },
+  { label: "In progress", key: "Active"    as const, accent: "#6366f1", light: "bg-indigo-50  dark:bg-indigo-900/30",  text: "text-indigo-700 dark:text-indigo-300",  Icon: Zap },
+  { label: "Interviews",  key: "Interview" as const, accent: "#f59e0b", light: "bg-amber-50   dark:bg-amber-900/30",   text: "text-amber-700  dark:text-amber-300",   Icon: Users },
+  { label: "Offers",      key: "Offer"     as const, accent: "#10b981", light: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", Icon: BadgeCheck },
+  { label: "Rejected",    key: "Rejected"  as const, accent: "#ef4444", light: "bg-red-50    dark:bg-red-900/30",     text: "text-red-700    dark:text-red-300",     Icon: XCircle },
 ];
 
 type ViewMode = "list" | "board";
@@ -267,7 +268,7 @@ export default function Dashboard() {
       {/* Stat cards */}
       {loaded && allApps.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {STAT_STATUSES.map(({ label, key, accent, light, text, icon }) => {
+          {STAT_STATUSES.map(({ label, key, accent, light, text, Icon }) => {
             const count = key === "Active" ? activeCount : countFor(key as Status);
             const clickable = key !== "Active";
             const isActive = filter === key;
@@ -280,9 +281,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: accent + "20" }}>
-                    <svg className="w-4 h-4" fill="none" stroke={accent} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-                    </svg>
+                    <Icon className="w-4 h-4" style={{ color: accent }} strokeWidth={2} />
                   </div>
                   {isActive && <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: accent }}>active</span>}
                 </div>
@@ -303,18 +302,14 @@ export default function Dashboard() {
               onClick={() => switchView("list")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === "list" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
+              <LayoutList className="w-4 h-4" />
               List
             </button>
             <button
               onClick={() => switchView("board")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === "board" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
+              <Columns className="w-4 h-4" />
               Board
             </button>
           </div>
@@ -324,23 +319,17 @@ export default function Dashboard() {
               <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
             <button onClick={handleExportJSON}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
+              <Download className="w-3.5 h-3.5" />
               JSON
             </button>
             <button onClick={handleExportCSV}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
+              <Download className="w-3.5 h-3.5" />
               CSV
             </button>
             <button onClick={() => importRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
-              </svg>
+              <Upload className="w-3.5 h-3.5" />
               Import
             </button>
           </div>
@@ -359,9 +348,7 @@ export default function Dashboard() {
       {overdueApps.length > 0 && (
         <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2.5">
-            <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
             <p className="text-sm font-semibold text-amber-800">
               {overdueApps.length} follow-up{overdueApps.length > 1 ? "s" : ""} overdue
             </p>
@@ -382,9 +369,7 @@ export default function Dashboard() {
       {allApps.length > 0 && (
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by company or role…"
@@ -395,9 +380,7 @@ export default function Dashboard() {
             {search && (
               <button onClick={() => setSearch("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -426,9 +409,7 @@ export default function Dashboard() {
               : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700"
           }`}
         >
-          <svg className="w-3.5 h-3.5" fill={starredOnly ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-          </svg>
+          <Star className="w-3.5 h-3.5" fill={starredOnly ? "currentColor" : "none"} />
           Starred
         </button>
         {(["All", ...ALL_STATUSES] as const).map((s) => (
@@ -488,8 +469,9 @@ export default function Dashboard() {
           </button>
           <button
             onClick={handleBulkDelete}
-            className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
           >
+            <Trash2 className="w-4 h-4" />
             Delete {selectedIds.size}
           </button>
         </div>

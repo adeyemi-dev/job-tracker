@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Star, ChevronDown, Check, Pencil, Trash2, ChevronRight, ExternalLink, FileText, FileSignature } from "lucide-react";
 import { Application, ALL_STATUSES, Status, STATUS_COLORS, STATUS_DOT, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 
 function formatSalary(app: Application): string | null {
@@ -81,9 +82,7 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
               title={app.starred ? "Unstar" : "Star"}
               className={`shrink-0 transition-colors ${app.starred ? "text-amber-400 hover:text-amber-300" : "text-slate-300 dark:text-slate-600 hover:text-amber-400 dark:hover:text-amber-400"}`}
             >
-              <svg className="w-4 h-4" fill={app.starred ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
+              <Star className="w-4 h-4" fill={app.starred ? "currentColor" : "none"} />
             </button>
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
 
@@ -94,9 +93,7 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
                 className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-opacity hover:opacity-80 ${STATUS_COLORS[app.status]}`}
               >
                 {app.status}
-                <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown className="w-3 h-3 opacity-60" />
               </button>
 
               {open && (
@@ -109,11 +106,7 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
                     >
                       <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
                       {s}
-                      {s === app.status && (
-                        <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
+                      {s === app.status && <Check className="w-3 h-3 ml-auto" />}
                     </button>
                   ))}
                 </div>
@@ -168,17 +161,17 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
           {/* Action buttons */}
           <div className="flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             <Link href={`/applications/${app.id}?edit=1`}
-              className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors">
+              className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors">
+              <Pencil className="w-3 h-3" />
               Edit
             </Link>
             <button onClick={() => onDelete(app.id)}
-              className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 font-medium transition-colors">
+              className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 font-medium transition-colors">
+              <Trash2 className="w-3 h-3" />
               Delete
             </button>
           </div>
-          <svg className="hidden sm:block w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="hidden sm:block w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0" />
         </div>
       </div>
 
@@ -188,27 +181,21 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
           {app.job_url && (
             <a href={app.job_url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
+              <ExternalLink className="w-3.5 h-3.5" />
               Job posting
             </a>
           )}
           {app.cv_url && (
             <a href={app.cv_url} {...(app.cv_file ? { download: app.cv_file } : { target: "_blank", rel: "noopener noreferrer" })}
               className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <FileText className="w-3.5 h-3.5" />
               CV
             </a>
           )}
           {app.cl_url && (
             <a href={app.cl_url} {...(app.cl_file ? { download: app.cl_file } : { target: "_blank", rel: "noopener noreferrer" })}
               className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
+              <FileSignature className="w-3.5 h-3.5" />
               Cover letter
             </a>
           )}
