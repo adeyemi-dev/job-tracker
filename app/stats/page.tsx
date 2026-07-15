@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBar } from "@/components/Skeleton";
 import { ALL_STATUSES, STATUS_COLORS, STATUS_DOT, Status, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 import { getApps, getInterviews } from "@/lib/store";
 
@@ -170,7 +171,20 @@ export default function StatsPage() {
 
   useEffect(() => { computeStats().then(setData); }, []);
 
-  if (!data || data.total === 0) return (
+  if (!data) return (
+    <>
+      <LoadingBar />
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <svg className="w-6 h-6 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <p className="text-sm text-slate-400 dark:text-slate-500">Loading stats…</p>
+      </div>
+    </>
+  );
+
+  if (data.total === 0) return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
         <svg className="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

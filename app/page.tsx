@@ -5,7 +5,7 @@ import { Application, ALL_STATUSES, Status, STATUS_DOT, isOverdue } from "@/lib/
 import { ApplicationCard } from "@/components/ApplicationCard";
 import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { KanbanBoard } from "@/components/KanbanBoard";
-import { SkeletonList } from "@/components/Skeleton";
+import { SkeletonList, LoadingBar } from "@/components/Skeleton";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
@@ -221,6 +221,7 @@ export default function Dashboard() {
 
   return (
     <div>
+      {!loaded && <LoadingBar />}
       {/* Greeting banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg shadow-indigo-200 dark:shadow-indigo-950">
         {/* Decorative SVG background */}
