@@ -18,10 +18,10 @@ export default function ApplicationDetail() {
 
   useEffect(() => {
     async function load() {
-      const found = await getApp(id);
+      const [found, ivs] = await Promise.all([getApp(id), getInterviews(id)]);
       if (!found) { router.replace("/"); return; }
       setApp(found);
-      setInterviews(await getInterviews(id));
+      setInterviews(ivs);
     }
     load();
   }, [id, router]);

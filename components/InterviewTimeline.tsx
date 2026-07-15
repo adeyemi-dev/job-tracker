@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Interview, INTERVIEW_TYPES, InterviewType } from "@/lib/types";
 import { addInterview, updateInterview, deleteInterview } from "@/lib/store";
 
@@ -13,6 +13,8 @@ const EMPTY: FormState = { type: "Phone", date: "", interviewer: "", notes: "" }
 
 export function InterviewTimeline({ applicationId, initial }: { applicationId: string; initial: Interview[] }) {
   const [interviews, setInterviews] = useState<Interview[]>(initial);
+
+  useEffect(() => { setInterviews(initial); }, [initial]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
