@@ -2,14 +2,13 @@
 
 import "./globals.css";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { signOut } from "@/lib/store";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ToastProvider } from "@/components/Toast";
 import { ConfirmProvider } from "@/components/ConfirmModal";
 import { BottomNav } from "@/components/BottomNav";
+import { UserMenu } from "@/components/UserMenu";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
   return (
@@ -44,22 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </svg>
                 Stats
               </a>
-              <a href="/settings"
-                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Account
-              </a>
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <button
-                onClick={async () => { await signOut(); router.push("/login"); router.refresh(); }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-              >
-                Sign out
-              </button>
               <a
                 href="/applications/new"
                 className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50"
@@ -67,8 +53,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="hidden sm:inline">New application</span>
+                <span className="hidden sm:inline">New</span>
               </a>
+              <UserMenu />
             </div>
           </div>
         </nav>}

@@ -9,6 +9,7 @@ import { SkeletonList, LoadingBar } from "@/components/Skeleton";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
+import { createClient } from "@/lib/supabase/client";
 
 type SortKey = "newest" | "oldest" | "company-az" | "company-za" | "salary-high" | "status";
 
@@ -26,36 +27,16 @@ function sortApps(apps: Application[], sort: SortKey): Application[] {
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return { text: "Good morning", emoji: "☀️", sub: "Let's find that dream role today." };
-  if (h < 17) return { text: "Good afternoon", emoji: "🎯", sub: "Keep pushing — the right job is out there." };
-  return { text: "Good evening", emoji: "🌙", sub: "Reflect on today's progress." };
+  if (h < 12) return { text: "Good morning", sub: "Let's land that dream role today." };
+  if (h < 17) return { text: "Good afternoon", sub: "Keep pushing — the right opportunity is out there." };
+  return { text: "Good evening", sub: "Great time to review and reflect on your progress." };
 }
 
-const STAT_STATUSES: { label: string; key: Status | "Active"; color: string; bg: string; darkBg: string; darkColor: string; icon: React.ReactNode }[] = [
-  {
-    label: "Active", key: "Active",
-    color: "text-indigo-700", bg: "bg-indigo-50",
-    darkColor: "dark:text-indigo-300", darkBg: "dark:bg-indigo-900/30",
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
-  },
-  {
-    label: "Interviews", key: "Interview",
-    color: "text-amber-700", bg: "bg-amber-50",
-    darkColor: "dark:text-amber-300", darkBg: "dark:bg-amber-900/30",
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
-  },
-  {
-    label: "Offers", key: "Offer",
-    color: "text-emerald-700", bg: "bg-emerald-50",
-    darkColor: "dark:text-emerald-300", darkBg: "dark:bg-emerald-900/30",
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
-  },
-  {
-    label: "Rejected", key: "Rejected",
-    color: "text-red-700", bg: "bg-red-50",
-    darkColor: "dark:text-red-300", darkBg: "dark:bg-red-900/30",
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
-  },
+const STAT_STATUSES = [
+  { label: "In progress",  key: "Active"    as const, accent: "#6366f1", light: "bg-indigo-50  dark:bg-indigo-900/30",  text: "text-indigo-700 dark:text-indigo-300",  icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+  { label: "Interviews",   key: "Interview" as const, accent: "#f59e0b", light: "bg-amber-50   dark:bg-amber-900/30",   text: "text-amber-700  dark:text-amber-300",   icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
+  { label: "Offers",       key: "Offer"     as const, accent: "#10b981", light: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
+  { label: "Rejected",     key: "Rejected"  as const, accent: "#ef4444", light: "bg-red-50    dark:bg-red-900/30",     text: "text-red-700    dark:text-red-300",     icon: "M6 18L18 6M6 6l12 12" },
 ];
 
 type ViewMode = "list" | "board";
@@ -77,12 +58,17 @@ export default function Dashboard() {
   const [migrating, setMigrating] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
   const importRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
   const confirm = useConfirm();
 
   useEffect(() => {
     async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const name = user?.user_metadata?.full_name || "";
+      setUserName(name.trim());
       setAllApps(await getApps());
       setView(readView());
       setLoaded(true);
@@ -223,42 +209,36 @@ export default function Dashboard() {
     <div>
       {!loaded && <LoadingBar />}
       {/* Greeting banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg shadow-indigo-200 dark:shadow-indigo-950">
-        {/* Decorative SVG background */}
-        <svg className="absolute right-0 top-0 h-full opacity-10" viewBox="0 0 300 200" fill="none">
-          <circle cx="250" cy="30" r="80" stroke="white" strokeWidth="2" />
-          <circle cx="280" cy="100" r="50" stroke="white" strokeWidth="1.5" />
-          <circle cx="150" cy="-20" r="100" stroke="white" strokeWidth="1" />
-          <path d="M200 160 Q250 100 300 140" stroke="white" strokeWidth="1.5" fill="none" />
-          <circle cx="220" cy="170" r="6" fill="white" />
-          <circle cx="270" cy="50" r="4" fill="white" />
-          <circle cx="190" cy="30" r="3" fill="white" />
-        </svg>
-        {/* Floating dots */}
-        <svg className="absolute left-4 bottom-4 opacity-20 animate-float-slow" width="60" height="60" viewBox="0 0 60 60">
-          {[0,1,2,3,4].map(r => [0,1,2,3,4].map(c => (
-            <circle key={`${r}-${c}`} cx={c*14+7} cy={r*14+7} r="2" fill="white" />
-          )))}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 p-6 sm:p-8 mb-6 sm:mb-8 shadow-xl shadow-indigo-200/60 dark:shadow-indigo-950/60">
+        {/* Blurred blob decorations */}
+        <div className="absolute -top-12 -right-12 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-6 w-40 h-40 bg-violet-400/20 rounded-full blur-2xl pointer-events-none" />
+        {/* Subtle dot grid */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.07]">
+          <defs>
+            <pattern id="grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="1.5" cy="1.5" r="1.5" fill="white" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
 
-        <div className="relative">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-indigo-200 text-sm font-medium mb-1">
-                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-              </p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                {greeting.text} {greeting.emoji}
-              </h1>
-              <p className="text-indigo-200 mt-1 text-sm">{greeting.sub}</p>
-            </div>
-            {allApps.length > 0 && (
-              <div className="hidden sm:block text-right">
-                <p className="text-4xl font-bold text-white">{allApps.length}</p>
-                <p className="text-indigo-200 text-xs mt-0.5">application{allApps.length !== 1 ? "s" : ""} tracked</p>
-              </div>
-            )}
+        <div className="relative flex items-end justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-indigo-200/60 text-xs font-semibold uppercase tracking-widest mb-3">
+              {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
+              {greeting.text}{userName ? `, ${userName.split(" ")[0]}` : ""}!
+            </h1>
+            <p className="text-indigo-200/70 mt-2.5 text-sm max-w-sm">{greeting.sub}</p>
           </div>
+          {loaded && allApps.length > 0 && (
+            <div className="shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-5 py-3.5 text-center hidden sm:block">
+              <p className="text-3xl font-bold text-white tabular-nums">{allApps.length}</p>
+              <p className="text-indigo-200/60 text-xs mt-0.5 font-medium">apps tracked</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -287,14 +267,28 @@ export default function Dashboard() {
       {/* Stat cards */}
       {loaded && allApps.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {STAT_STATUSES.map(({ label, key, color, bg, darkColor, darkBg, icon }) => {
+          {STAT_STATUSES.map(({ label, key, accent, light, text, icon }) => {
             const count = key === "Active" ? activeCount : countFor(key as Status);
+            const clickable = key !== "Active";
+            const isActive = filter === key;
             return (
-              <div key={key} className={`${bg} ${darkBg} rounded-xl p-4 border border-transparent`}>
-                <div className={`${color} ${darkColor} mb-2 opacity-70`}>{icon}</div>
-                <p className={`text-2xl font-bold ${color} ${darkColor}`}>{count}</p>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{label}</p>
-              </div>
+              <button
+                key={key}
+                onClick={() => { if (clickable) { setFilter(isActive ? "All" : key as Status); if (view === "board") switchView("list"); } }}
+                className={`${light} rounded-2xl p-4 sm:p-5 text-left transition-all duration-200 shadow-sm ${clickable ? "hover:scale-[1.03] hover:shadow-lg active:scale-[0.97] cursor-pointer" : "cursor-default"}`}
+                style={isActive ? { outline: `2px solid ${accent}`, outlineOffset: "2px" } : {}}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: accent + "20" }}>
+                    <svg className="w-4 h-4" fill="none" stroke={accent} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+                    </svg>
+                  </div>
+                  {isActive && <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: accent }}>active</span>}
+                </div>
+                <p className={`text-2xl sm:text-3xl font-bold tabular-nums ${text}`}>{count}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{label}</p>
+              </button>
             );
           })}
         </div>

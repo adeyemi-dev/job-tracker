@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
 import { signOut } from "@/lib/store";
@@ -11,12 +11,28 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const router = useRouter();
 
+  const [displayName, setDisplayName] = useState("");
   const [newEmail, setNewEmail] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loadingName, setLoadingName] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setDisplayName(user?.user_metadata?.full_name ?? "");
+    });
+  }, []);
+
+  async function handleNameChange(e: React.FormEvent) {
+    e.preventDefault();
+    setLoadingName(true);
+    const { error } = await supabase.auth.updateUser({ data: { full_name: displayName.trim() } });
+    if (error) showToast(error.message, "error");
+    else showToast("Name updated", "success");
+    setLoadingName(false);
+  }
 
   async function handleEmailChange(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +51,7 @@ export default function SettingsPage() {
     setLoadingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) showToast(error.message, "error");
-    else { showToast("Password updated", "success"); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); }
+    else { showToast("Password updated", "success"); setNewPassword(""); setConfirmPassword(""); }
     setLoadingPassword(false);
   }
 
@@ -52,10 +68,28 @@ export default function SettingsPage() {
     <div className="max-w-lg pb-24 sm:pb-8">
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Account settings</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your email and password</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your profile and account</p>
       </div>
 
       <div className="space-y-4">
+        {/* Display name */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">Your name</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">This is how we'll greet you on the dashboard.</p>
+          <form onSubmit={handleNameChange} className="flex gap-3">
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className={`${inputCls} flex-1`}
+              placeholder="e.g. Afeez"
+            />
+            <button type="submit" disabled={loadingName} className="shrink-0 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60">
+              {loadingName ? "Saving…" : "Save"}
+            </button>
+          </form>
+        </div>
+
         {/* Change email */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">Change email</h2>
