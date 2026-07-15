@@ -5,6 +5,9 @@ import { Application, ALL_STATUSES, Status, STATUS_DOT, isOverdue } from "@/lib/
 import { ApplicationCard } from "@/components/ApplicationCard";
 import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { SkeletonList } from "@/components/Skeleton";
+import { useToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 
 type SortKey = "newest" | "oldest" | "company-az" | "company-za" | "salary-high" | "status";
@@ -70,10 +73,13 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
   const [view, setView] = useState<ViewMode>("list");
-  const [importMsg, setImportMsg] = useState<string | null>(null);
   const [localDataCount, setLocalDataCount] = useState(0);
   const [migrating, setMigrating] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     async function load() {
@@ -100,11 +106,9 @@ export default function Dashboard() {
       localStorage.removeItem("jt-apps");
       localStorage.removeItem("jt-interviews");
       setLocalDataCount(0);
-      setImportMsg(`Migrated ${count} application${count !== 1 ? "s" : ""} from this device`);
-      setTimeout(() => setImportMsg(null), 4000);
+      showToast(`Migrated ${count} application${count !== 1 ? "s" : ""} from this device`, "success");
     } catch {
-      setImportMsg("Migration failed — try the JSON import instead");
-      setTimeout(() => setImportMsg(null), 4000);
+      showToast("Migration failed — try the JSON import instead", "error");
     }
     setMigrating(false);
   }
@@ -138,11 +142,9 @@ export default function Dashboard() {
       try {
         const { count } = await importJSON(ev.target?.result as string);
         setAllApps(await getApps());
-        setImportMsg(`Imported ${count} application${count !== 1 ? "s" : ""}`);
-        setTimeout(() => setImportMsg(null), 3000);
+        showToast(`Imported ${count} application${count !== 1 ? "s" : ""}`, "success");
       } catch {
-        setImportMsg("Invalid file — import failed");
-        setTimeout(() => setImportMsg(null), 3000);
+        showToast("Invalid file — import failed", "error");
       }
     };
     reader.readAsText(file);
@@ -150,9 +152,38 @@ export default function Dashboard() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this application?")) return;
+    const ok = await confirm({ message: "Delete this application? This cannot be undone.", danger: true, confirmLabel: "Delete" });
+    if (!ok) return;
     await deleteApp(id);
     setAllApps((prev) => prev.filter((a) => a.id !== id));
+    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    showToast("Application deleted", "info");
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    const ok = await confirm({ message: `Delete ${selectedIds.size} application${selectedIds.size !== 1 ? "s" : ""}? This cannot be undone.`, danger: true, confirmLabel: "Delete all" });
+    if (!ok) return;
+    await Promise.all([...selectedIds].map((id) => deleteApp(id)));
+    setAllApps((prev) => prev.filter((a) => !selectedIds.has(a.id)));
+    showToast(`Deleted ${selectedIds.size} application${selectedIds.size !== 1 ? "s" : ""}`, "info");
+    setSelectedIds(new Set());
+  }
+
+  function handleSelect(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  }
+
+  function handleSelectAll() {
+    if (selectedIds.size === displayed.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(displayed.map((a) => a.id)));
+    }
   }
 
   async function handleStatusChange(id: string, status: Status) {
@@ -172,9 +203,12 @@ export default function Dashboard() {
     allApps
       .filter((a) => !starredOnly || a.starred)
       .filter((a) => filter === "All" || a.status === filter)
+      .filter((a) => !tagFilter || (a.tags ?? []).includes(tagFilter))
       .filter((a) => !q || a.company.toLowerCase().includes(q) || a.role.toLowerCase().includes(q)),
     sort
   );
+
+  const allTags = [...new Set(allApps.flatMap((a) => a.tags ?? []))].sort();
 
   const overdueApps = allApps.filter(
     (a) => isOverdue(a.followup_date) && !["Saved", "In Progress", "Rejected", "Withdrawn", "Ghosted"].includes(a.status)
@@ -292,12 +326,7 @@ export default function Dashboard() {
 
           {/* Export / Import */}
           <div className="flex items-center gap-2">
-            {importMsg && (
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${importMsg.includes("failed") ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"}`}>
-                {importMsg}
-              </span>
-            )}
-            <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+              <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
             <button onClick={handleExportJSON}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -430,8 +459,49 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Tag filter pills */}
+      {allTags.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap mb-4">
+          <button
+            onClick={() => setTagFilter(null)}
+            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${tagFilter === null ? "bg-indigo-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"}`}
+          >
+            All tags
+          </button>
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+              className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${tagFilter === tag ? "bg-indigo-500 text-white" : "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"}`}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Bulk actions toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl shadow-xl shadow-slate-900/30 px-5 py-3">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <div className="w-px h-4 bg-slate-600" />
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            Deselect
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+          >
+            Delete {selectedIds.size}
+          </button>
+        </div>
+      )}
+
       {/* List */}
-      {!loaded ? null : displayed.length === 0 && allApps.length === 0 ? (
+      {!loaded ? <SkeletonList count={4} /> : displayed.length === 0 && allApps.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           {/* Illustrated empty state SVG */}
           <div className="relative mb-6">
@@ -497,8 +567,20 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="space-y-2.5">
+          {/* Select all row */}
+          {displayed.length > 0 && (
+            <div className="flex items-center gap-2 px-1 mb-1">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === displayed.length && displayed.length > 0}
+                onChange={handleSelectAll}
+                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Select all</span>
+            </div>
+          )}
           {displayed.map((app) => (
-            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} onStarToggle={handleStarToggle} />
+            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} onStarToggle={handleStarToggle} selected={selectedIds.has(app.id)} onSelect={handleSelect} />
           ))}
         </div>
       )}

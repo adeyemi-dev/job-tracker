@@ -18,9 +18,11 @@ interface Props {
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Status) => void;
   onStarToggle: (id: string) => void;
+  selected?: boolean;
+  onSelect?: (id: string, checked: boolean) => void;
 }
 
-export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle }: Props) {
+export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, selected, onSelect }: Props) {
   const initials = app.company
     .split(" ")
     .slice(0, 2)
@@ -51,6 +53,16 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle }:
         : "border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
     }`}>
       <div className="flex items-center gap-3 sm:gap-4">
+        {/* Checkbox (bulk select) */}
+        {onSelect && (
+          <input
+            type="checkbox"
+            checked={selected ?? false}
+            onChange={(e) => onSelect(app.id, e.target.checked)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer"
+          />
+        )}
         {/* Avatar */}
         <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${avatarColor(app.company)}`}>
           {initials}
@@ -117,6 +129,15 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle }:
               {app.contract_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.contract_type}</span>}
             </div>
           )}
+          {app.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {app.tags.map((tag) => (
+                <span key={tag} className="text-xs px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded font-medium">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
           {/* Date — shown below role on mobile only */}
           <p className="sm:hidden text-xs text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums">
             {new Date(app.applied_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
@@ -175,8 +196,8 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle }:
               Job posting
             </a>
           )}
-          {(app.cv_file || app.cv_url) && (
-            <a href={app.cv_file ? `/api/files/${app.cv_file}` : app.cv_url!} target="_blank" rel="noopener noreferrer"
+          {app.cv_url && (
+            <a href={app.cv_url} {...(app.cv_file ? { download: app.cv_file } : { target: "_blank", rel: "noopener noreferrer" })}
               className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -184,8 +205,8 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle }:
               CV
             </a>
           )}
-          {(app.cl_file || app.cl_url) && (
-            <a href={app.cl_file ? `/api/files/${app.cl_file}` : app.cl_url!} target="_blank" rel="noopener noreferrer"
+          {app.cl_url && (
+            <a href={app.cl_url} {...(app.cl_file ? { download: app.cl_file } : { target: "_blank", rel: "noopener noreferrer" })}
               className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

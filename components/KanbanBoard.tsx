@@ -34,15 +34,15 @@ export function KanbanBoard({ apps, onAppsChange }: Props) {
     setOverStatus(status);
   }
 
-  function handleDrop(e: React.DragEvent, status: Status) {
+  async function handleDrop(e: React.DragEvent, status: Status) {
     e.preventDefault();
     if (!draggingId) return;
     const app = apps.find((a) => a.id === draggingId);
     if (!app || app.status === status) { setDraggingId(null); setOverStatus(null); return; }
-    updateApp(draggingId, { status });
     onAppsChange(apps.map((a) => a.id === draggingId ? { ...a, status } : a));
     setDraggingId(null);
     setOverStatus(null);
+    await updateApp(draggingId, { status });
   }
 
   function handleDragEnd() {

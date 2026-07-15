@@ -4,6 +4,9 @@ import "./globals.css";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { signOut } from "@/lib/store";
 import { useRouter, usePathname } from "next/navigation";
+import { ToastProvider } from "@/components/Toast";
+import { ConfirmProvider } from "@/components/ConfirmModal";
+import { BottomNav } from "@/components/BottomNav";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -20,7 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           } catch(e){}
         `}} />
       </head>
-      <body className="bg-slate-50 dark:bg-slate-950 min-h-screen transition-colors duration-200">
+      <body className="bg-slate-50 dark:bg-slate-950 min-h-screen transition-colors duration-200 pb-16 sm:pb-0">
+        <ToastProvider><ConfirmProvider>
         {isLoginPage ? null : <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
             <div className="flex items-center gap-4 sm:gap-6">
@@ -34,11 +38,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="font-bold text-slate-900 dark:text-white text-[15px] tracking-tight">JobTracker</span>
               </a>
               <a href="/stats"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <span className="hidden sm:inline">Stats</span>
+                Stats
+              </a>
+              <a href="/settings"
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Account
               </a>
             </div>
             <div className="flex items-center gap-2">
@@ -72,6 +83,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
           </div>
         </footer>}
+        <BottomNav />
+        </ConfirmProvider></ToastProvider>
       </body>
     </html>
   );

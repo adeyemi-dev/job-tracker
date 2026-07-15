@@ -119,6 +119,7 @@ export interface Application {
   work_type: WorkType | null;
   contract_type: ContractType | null;
   starred: boolean;
+  tags: string[];
   status_history: StatusHistoryEntry[];
   created_at: string;
   updated_at: string;

@@ -36,6 +36,7 @@ function mapApp(row: any): Application {
     work_type: (row.work_type ?? null) as WorkType | null,
     contract_type: (row.contract_type ?? null) as ContractType | null,
     starred: row.starred ?? false,
+    tags: (row.tags ?? []) as string[],
     status_history: (row.status_history ?? []) as StatusHistoryEntry[],
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -109,6 +110,7 @@ export async function createApp(data: Partial<Application>): Promise<Application
       work_type: data.work_type ?? null,
       contract_type: data.contract_type ?? null,
       starred: data.starred ?? false,
+      tags: data.tags ?? [],
       status_history: [{ status, changed_at: now }],
     })
     .select()

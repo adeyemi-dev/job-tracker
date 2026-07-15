@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ALL_STATUSES, STATUS_COLORS, STATUS_DOT, Status } from "@/lib/types";
+import { ALL_STATUSES, STATUS_COLORS, STATUS_DOT, Status, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 import { getApps, getInterviews } from "@/lib/store";
 
 interface StatsData {
@@ -17,6 +17,7 @@ interface StatsData {
   funnel: { stage: string; count: number; color: string }[];
   weeklyTrend: { week: string; label: string; count: number }[];
   thisWeekStart: string;
+  salaryByStatus: { status: Status; avgMin: number | null; avgMax: number | null; count: number }[];
 }
 
 function WeeklyChart({ trend, thisWeekStart }: { trend: StatsData["weeklyTrend"]; thisWeekStart: string }) {
@@ -142,7 +143,26 @@ async function computeStats(): Promise<StatsData> {
     weeklyTrend.push({ week: weekStart, label, count });
   }
 
-  return { total, thisWeek, lastWeek, byStatus, byPlatform, platformResponseRate, responseRate, offerRate, avgDaysToHear, funnel, weeklyTrend, thisWeekStart };
+  // Salary by status
+  const salaryBuckets: Record<string, { mins: number[]; maxes: number[] }> = {};
+  for (const a of apps) {
+    if (a.salary_min || a.salary_max) {
+      if (!salaryBuckets[a.status]) salaryBuckets[a.status] = { mins: [], maxes: [] };
+      if (a.salary_min) salaryBuckets[a.status].mins.push(a.salary_min);
+      if (a.salary_max) salaryBuckets[a.status].maxes.push(a.salary_max);
+    }
+  }
+  const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((s, n) => s + n, 0) / arr.length) : null;
+  const salaryByStatus = ALL_STATUSES
+    .filter((s) => salaryBuckets[s])
+    .map((s) => ({
+      status: s,
+      avgMin: avg(salaryBuckets[s].mins),
+      avgMax: avg(salaryBuckets[s].maxes),
+      count: Math.max(salaryBuckets[s].mins.length, salaryBuckets[s].maxes.length),
+    }));
+
+  return { total, thisWeek, lastWeek, byStatus, byPlatform, platformResponseRate, responseRate, offerRate, avgDaysToHear, funnel, weeklyTrend, thisWeekStart, salaryByStatus };
 }
 
 export default function StatsPage() {
@@ -269,6 +289,40 @@ export default function StatsPage() {
           </p>
         </div>
       </div>
+
+      {/* Salary by status */}
+      {data.salaryByStatus.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm mb-4">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Salary by status</p>
+          <div className="space-y-3">
+            {data.salaryByStatus.map(({ status, avgMin, avgMax }) => {
+              const sym = "£";
+              const fmt = (n: number) => sym + n.toLocaleString();
+              const label = avgMin && avgMax ? `${fmt(avgMin)} – ${fmt(avgMax)}` : avgMax ? `Up to ${fmt(avgMax)}` : avgMin ? `From ${fmt(avgMin)}` : null;
+              const maxVal = avgMax ?? avgMin ?? 0;
+              const globalMax = Math.max(...data.salaryByStatus.map((s) => s.avgMax ?? s.avgMin ?? 0), 1);
+              const pct = Math.round((maxVal / globalMax) * 100);
+              return (
+                <div key={status}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${STATUS_DOT[status]}`} />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{status}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">{label}</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-emerald-400 dark:bg-emerald-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            Average salary range for applications with salary data, grouped by status
+          </p>
+        </div>
+      )}
 
       {/* Status breakdown + Platform response rates */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">

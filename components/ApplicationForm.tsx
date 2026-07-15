@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Application, ALL_STATUSES, Status, PLATFORMS, WORK_TYPES, CONTRACT_TYPES, CURRENCIES, WorkType, ContractType, Currency } from "@/lib/types";
 import { FileOrLinkInput } from "./FileOrLinkInput";
+import { TagInput } from "./TagInput";
 
 interface Props {
   initial?: Partial<Application>;
@@ -27,6 +28,7 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
   const [platformCustom, setPlatformCustom] = useState(isStoredCustom ? storedPlatform : "");
 
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [cvFile, setCvFile] = useState<string | null>(initial?.cv_file ?? null);
   const [cvUrl, setCvUrl] = useState<string | null>(initial?.cv_url ?? null);
   const [clFile, setClFile] = useState<string | null>(initial?.cl_file ?? null);
@@ -57,6 +59,7 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
       applied_date: appliedDate,
       followup_date: followupDate || null,
       notes: notes.trim() || null,
+      tags,
       cv_file: cvFile,
       cv_url: cvUrl,
       cl_file: clFile,
@@ -174,6 +177,11 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
         <label className={labelCls}>Notes</label>
         <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}
           className={`${inputCls} resize-none`} placeholder="Recruiter name, interview tips…" />
+      </div>
+
+      <div>
+        <label className={labelCls}>Tags <span className="ml-1 text-slate-400 font-normal">(press Enter to add)</span></label>
+        <TagInput tags={tags} onChange={setTags} placeholder="e.g. dream-job, urgent, referral…" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
