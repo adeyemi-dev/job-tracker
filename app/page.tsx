@@ -97,6 +97,8 @@ export default function Dashboard() {
       const json = JSON.stringify({ apps, interviews });
       const { count } = await importJSON(json);
       setAllApps(await getApps());
+      localStorage.removeItem("jt-apps");
+      localStorage.removeItem("jt-interviews");
       setLocalDataCount(0);
       setImportMsg(`Migrated ${count} application${count !== 1 ? "s" : ""} from this device`);
       setTimeout(() => setImportMsg(null), 4000);
