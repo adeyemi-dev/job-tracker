@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Application, ALL_STATUSES, Status, STATUS_COLORS, STATUS_DOT, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
 
 function formatSalary(app: Application): string | null {
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, selected, onSelect }: Props) {
+  const router = useRouter();
   const initials = app.company
     .split(" ")
     .slice(0, 2)
@@ -47,11 +49,14 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
   }, [open]);
 
   return (
-    <div className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-all duration-200 ${
-      overdue
-        ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10"
-        : "border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-    }`}>
+    <div
+      onClick={() => router.push(`/applications/${app.id}`)}
+      className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-all duration-200 cursor-pointer ${
+        overdue
+          ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10"
+          : "border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+      }`}
+    >
       <div className="flex items-center gap-3 sm:gap-4">
         {/* Checkbox (bulk select) */}
         {onSelect && (
@@ -72,7 +77,7 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => onStarToggle(app.id)}
+              onClick={(e) => { e.stopPropagation(); onStarToggle(app.id); }}
               title={app.starred ? "Unstar" : "Star"}
               className={`shrink-0 transition-colors ${app.starred ? "text-amber-400 hover:text-amber-300" : "text-slate-300 dark:text-slate-600 hover:text-amber-400 dark:hover:text-amber-400"}`}
             >
@@ -83,7 +88,7 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
 
             {/* Clickable status badge with dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setOpen((o) => !o)}
                 className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-opacity hover:opacity-80 ${STATUS_COLORS[app.status]}`}
@@ -160,12 +165,8 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
               </span>
             )}
           </div>
-          {/* Action buttons — always visible on mobile, hover-reveal on desktop */}
-          <div className="flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-            <Link href={`/applications/${app.id}`}
-              className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium transition-colors">
-              View
-            </Link>
+          {/* Action buttons */}
+          <div className="flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             <Link href={`/applications/${app.id}?edit=1`}
               className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors">
               Edit
@@ -175,18 +176,15 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
               Delete
             </button>
           </div>
-          <Link href={`/applications/${app.id}`}
-            className="hidden sm:block text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+          <svg className="hidden sm:block w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </div>
       </div>
 
       {/* Links row */}
       {(app.job_url || app.cv_file || app.cv_url || app.cl_file || app.cl_url || app.notes) && (
-        <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap" onClick={(e) => e.stopPropagation()}>
           {app.job_url && (
             <a href={app.job_url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
