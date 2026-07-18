@@ -8,7 +8,8 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { SkeletonList, LoadingBar } from "@/components/Skeleton";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
-import { getApps, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
+import { getApps, getAllInterviews, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
+import { Interview } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown } from "lucide-react";
 
@@ -57,6 +58,7 @@ export default function Dashboard() {
   const [view, setView] = useState<ViewMode>("list");
   const [localDataCount, setLocalDataCount] = useState(0);
   const [migrating, setMigrating] = useState(false);
+  const [allInterviews, setAllInterviews] = useState<Record<string, Interview[]>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
@@ -70,7 +72,9 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       const name = user?.user_metadata?.full_name || "";
       setUserName(name.trim());
-      setAllApps(await getApps());
+      const [apps, ivs] = await Promise.all([getApps(), getAllInterviews()]);
+      setAllApps(apps);
+      setAllInterviews(ivs);
       setView(readView());
       setLoaded(true);
       // Check for old localStorage data to migrate
@@ -557,7 +561,7 @@ export default function Dashboard() {
             </div>
           )}
           {displayed.map((app) => (
-            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} onStarToggle={handleStarToggle} selected={selectedIds.has(app.id)} onSelect={handleSelect} />
+            <ApplicationCard key={app.id} app={app} onDelete={handleDelete} onStatusChange={handleStatusChange} onStarToggle={handleStarToggle} selected={selectedIds.has(app.id)} onSelect={handleSelect} interviews={allInterviews[app.id] ?? []} />
           ))}
         </div>
       )}

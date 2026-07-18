@@ -3,8 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Star, ChevronDown, Check, Pencil, Trash2, ChevronRight, ExternalLink, FileText, FileSignature } from "lucide-react";
-import { Application, ALL_STATUSES, Status, STATUS_COLORS, STATUS_DOT, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency } from "@/lib/types";
+import { Star, ChevronDown, Check, Pencil, Trash2, ChevronRight, ExternalLink, FileText, FileSignature, Phone, Video, Building2, Code2, Users, MessageSquare } from "lucide-react";
+import { Application, ALL_STATUSES, Status, STATUS_COLORS, STATUS_DOT, OUTCOME_STYLES, avatarColor, isOverdue, CURRENCY_SYMBOL, Currency, Interview, InterviewType } from "@/lib/types";
+
+const INTERVIEW_TYPE_ICON: Record<InterviewType, React.ElementType> = {
+  Phone: Phone, Video: Video, Onsite: Building2, Technical: Code2, HR: Users, Other: MessageSquare,
+};
 
 function formatSalary(app: Application): string | null {
   if (!app.salary_min && !app.salary_max) return null;
@@ -22,9 +26,10 @@ interface Props {
   onStarToggle: (id: string) => void;
   selected?: boolean;
   onSelect?: (id: string, checked: boolean) => void;
+  interviews?: Interview[];
 }
 
-export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, selected, onSelect }: Props) {
+export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, selected, onSelect, interviews = [] }: Props) {
   const router = useRouter();
   const initials = app.company
     .split(" ")
@@ -125,6 +130,20 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
               {salary && <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{salary}</span>}
               {app.work_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.work_type}</span>}
               {app.contract_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.contract_type}</span>}
+            </div>
+          )}
+          {/* Interview stage indicator */}
+          {interviews.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              {interviews.map((iv) => {
+                const Icon = INTERVIEW_TYPE_ICON[iv.type];
+                return (
+                  <span key={iv.id} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${OUTCOME_STYLES[iv.outcome]}`}>
+                    <Icon className="w-3 h-3" />
+                    R{iv.round} {iv.type}
+                  </span>
+                );
+              })}
             </div>
           )}
           {app.tags?.length > 0 && (

@@ -126,10 +126,16 @@ export interface Application {
 }
 
 export type InterviewType = "Phone" | "Video" | "Onsite" | "Technical" | "HR" | "Other";
+export const INTERVIEW_TYPES: InterviewType[] = ["Phone", "Video", "Onsite", "Technical", "HR", "Other"];
 
-export const INTERVIEW_TYPES: InterviewType[] = [
-  "Phone", "Video", "Onsite", "Technical", "HR", "Other",
-];
+export type InterviewOutcome = "Pending" | "Passed" | "Failed";
+export const INTERVIEW_OUTCOMES: InterviewOutcome[] = ["Pending", "Passed", "Failed"];
+
+export const OUTCOME_STYLES: Record<InterviewOutcome, string> = {
+  Pending: "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
+  Passed:  "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800",
+  Failed:  "bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-400 dark:ring-red-800",
+};
 
 export interface Interview {
   id: string;
@@ -139,6 +145,7 @@ export interface Interview {
   date: string;
   interviewer: string | null;
   notes: string | null;
+  outcome: InterviewOutcome;
   created_at: string;
 }
 

@@ -1,5 +1,5 @@
 import { createClient } from "./supabase/client";
-import { Application, Interview, InterviewType, Status, Currency, WorkType, ContractType, StatusHistoryEntry } from "./types";
+import { Application, Interview, InterviewType, InterviewOutcome, Status, Currency, WorkType, ContractType, StatusHistoryEntry } from "./types";
 
 // ─── localStorage helpers (preferences only) ────────────────────────────────
 
@@ -53,6 +53,7 @@ function mapInterview(row: any): Interview {
     date: row.date,
     interviewer: row.interviewer ?? null,
     notes: row.notes ?? null,
+    outcome: (row.outcome ?? "Pending") as InterviewOutcome,
     created_at: row.created_at,
   };
 }
@@ -185,7 +186,7 @@ export async function getAllInterviews(): Promise<Record<string, Interview[]>> {
 
 export async function addInterview(
   applicationId: string,
-  data: { type: InterviewType; date: string; interviewer: string | null; notes: string | null }
+  data: { type: InterviewType; date: string; interviewer: string | null; notes: string | null; outcome?: InterviewOutcome }
 ): Promise<Interview> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -204,6 +205,7 @@ export async function addInterview(
       date: data.date,
       interviewer: data.interviewer,
       notes: data.notes,
+      outcome: data.outcome ?? "Pending",
       created_at: now,
     })
     .select()
@@ -226,6 +228,7 @@ export async function updateInterview(
       date: data.date,
       interviewer: data.interviewer,
       notes: data.notes,
+      outcome: data.outcome,
     })
     .eq("id", id)
     .eq("application_id", applicationId)
@@ -320,6 +323,7 @@ export async function importJSON(json: string): Promise<{ count: number }> {
         date: iv.date,
         interviewer: iv.interviewer,
         notes: iv.notes,
+        outcome: iv.outcome ?? "Pending",
         created_at: iv.created_at,
       }))
     );
