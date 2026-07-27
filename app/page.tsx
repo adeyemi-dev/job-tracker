@@ -10,7 +10,7 @@ import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, getAllInterviews, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown, Phone, Video, Building2, Code2, FileText } from "lucide-react";
+import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown, Phone, Video, Building2, Code2, FileText, Printer } from "lucide-react";
 
 const INTERVIEW_TYPE_ICON: Record<InterviewType, React.ElementType> = {
   Phone, Video, Onsite: Building2, Technical: Code2, HR: Users, Other: FileText,
@@ -93,6 +93,23 @@ export default function Dashboard() {
         const old = JSON.parse(localStorage.getItem("jt-apps") ?? "[]");
         if (Array.isArray(old) && old.length > 0) setLocalDataCount(old.length);
       } catch { /* no local data */ }
+      // Check for overdue follow-up notifications
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        const overdueForNotif = apps.filter(
+          (a) => isOverdue(a.followup_date) && !["Rejected", "Withdrawn", "Ghosted"].includes(a.status)
+        );
+        if (overdueForNotif.length > 0) {
+          const last = localStorage.getItem("jt-last-notif");
+          const today = new Date().toISOString().slice(0, 10);
+          if (last !== today) {
+            new Notification("JobTracker — Follow-ups overdue", {
+              body: `You have ${overdueForNotif.length} follow-up${overdueForNotif.length !== 1 ? "s" : ""} overdue: ${overdueForNotif.slice(0, 3).map((a) => a.company).join(", ")}${overdueForNotif.length > 3 ? "…" : ""}`,
+              icon: "/favicon.ico",
+            });
+            localStorage.setItem("jt-last-notif", today);
+          }
+        }
+      }
     }
     load();
   }, []);
@@ -156,10 +173,20 @@ export default function Dashboard() {
   async function handleDelete(id: string) {
     const ok = await confirm({ message: "Delete this application? This cannot be undone.", danger: true, confirmLabel: "Delete" });
     if (!ok) return;
-    await deleteApp(id);
+    const app = allApps.find((a) => a.id === id);
+    if (!app) return;
     setAllApps((prev) => prev.filter((a) => a.id !== id));
     setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
-    showToast("Application deleted", "info");
+    let undone = false;
+    const timer = setTimeout(() => { if (!undone) deleteApp(id); }, 5000);
+    showToast("Application deleted", "info", {
+      label: "Undo",
+      onClick: () => {
+        undone = true;
+        clearTimeout(timer);
+        setAllApps((prev) => [app, ...prev]);
+      },
+    });
   }
 
   async function handleBulkDelete() {
@@ -201,12 +228,15 @@ export default function Dashboard() {
   }
 
   const q = search.toLowerCase().trim();
+
+  // Search-filtered: applies search/tag/starred but NOT status filter (for stat counts)
+  const searchFiltered = allApps
+    .filter((a) => !starredOnly || a.starred)
+    .filter((a) => !tagFilter || (a.tags ?? []).includes(tagFilter))
+    .filter((a) => !q || a.company.toLowerCase().includes(q) || a.role.toLowerCase().includes(q));
+
   const displayed = sortApps(
-    allApps
-      .filter((a) => !starredOnly || a.starred)
-      .filter((a) => filter === "All" || a.status === filter)
-      .filter((a) => !tagFilter || (a.tags ?? []).includes(tagFilter))
-      .filter((a) => !q || a.company.toLowerCase().includes(q) || a.role.toLowerCase().includes(q)),
+    searchFiltered.filter((a) => filter === "All" || a.status === filter),
     sort
   );
 
@@ -216,13 +246,20 @@ export default function Dashboard() {
     (a) => isOverdue(a.followup_date) && !["Saved", "In Progress", "Rejected", "Withdrawn", "Ghosted"].includes(a.status)
   );
 
-  const activeCount = allApps.filter((a) => !["Rejected", "Withdrawn", "Offer", "Ghosted"].includes(a.status)).length;
-  const countFor = (s: Status) => allApps.filter((a) => a.status === s).length;
+  const activeCount = searchFiltered.filter((a) => !["Rejected", "Withdrawn", "Offer", "Ghosted"].includes(a.status)).length;
+  const countFor = (s: Status) => searchFiltered.filter((a) => a.status === s).length;
 
   const greeting = getGreeting();
 
   return (
     <div>
+      <style>{`
+        @media print {
+          nav, footer, .fixed, button, input[type="checkbox"] { display: none !important; }
+          body { background: white !important; }
+          .print\\:hidden { display: none !important; }
+        }
+      `}</style>
       {!loaded && <LoadingBar />}
       {/* Greeting banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 p-6 sm:p-8 mb-6 sm:mb-8 shadow-xl shadow-indigo-200/60 dark:shadow-indigo-950/60">
@@ -248,6 +285,27 @@ export default function Dashboard() {
               {greeting.text}{userName ? `, ${userName.split(" ")[0]}` : ""}!
             </h1>
             <p className="text-indigo-200/70 mt-2.5 text-sm max-w-sm">{greeting.sub}</p>
+            {loaded && allApps.length > 0 && (() => {
+              const now = new Date();
+              const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+              const lastMonthStr = (() => {
+                const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+              })();
+              const thisMonth = allApps.filter((a) => a.applied_date.startsWith(thisMonthStr)).length;
+              const lastMonth = allApps.filter((a) => a.applied_date.startsWith(lastMonthStr)).length;
+              const delta = thisMonth - lastMonth;
+              return (
+                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                  <span className="text-indigo-200/70 text-xs font-medium">{thisMonth} applied this month</span>
+                  {lastMonth > 0 && delta !== 0 && (
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${delta > 0 ? "bg-emerald-500/20 text-emerald-200" : "bg-red-500/20 text-red-200"}`}>
+                      {delta > 0 ? "▲" : "▼"} {Math.abs(delta)} vs last month
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           {loaded && allApps.length > 0 && (
             <div className="shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 text-center">
@@ -454,6 +512,13 @@ export default function Dashboard() {
               <Upload className="w-3.5 h-3.5" />
               Import
             </button>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Print
+            </button>
           </div>
         </div>
       )}
@@ -589,6 +654,23 @@ export default function Dashboard() {
           >
             Deselect
           </button>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <select
+              onChange={async (e) => {
+                const status = e.target.value as Status;
+                if (!status) return;
+                await Promise.all([...selectedIds].map((id) => updateApp(id, { status })));
+                setAllApps(await getApps());
+                showToast(`Updated ${selectedIds.size} application${selectedIds.size !== 1 ? "s" : ""} to ${status}`, "success");
+                setSelectedIds(new Set());
+              }}
+              defaultValue=""
+              className="text-sm bg-slate-700 dark:bg-slate-600 text-white rounded-lg px-3 py-1.5 border border-slate-600 cursor-pointer focus:outline-none"
+            >
+              <option value="">Move to…</option>
+              {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
           <button
             onClick={handleBulkDelete}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"

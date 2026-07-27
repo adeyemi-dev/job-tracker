@@ -43,6 +43,12 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Swipe-to-delete state
+  const [swipeX, setSwipeX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 72;
+
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
@@ -55,174 +61,200 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
   }, [open]);
 
   return (
-    <div
-      onClick={() => router.push(`/applications/${app.id}`)}
-      className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-all duration-200 cursor-pointer ${
-        overdue
-          ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10"
-          : "border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-      }`}
-    >
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* Checkbox (bulk select) */}
-        {onSelect && (
-          <input
-            type="checkbox"
-            checked={selected ?? false}
-            onChange={(e) => onSelect(app.id, e.target.checked)}
-            onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer"
-          />
-        )}
-        {/* Avatar */}
-        <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${avatarColor(app.company)}`}>
-          {initials}
-        </div>
-
-        {/* Main info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={(e) => { e.stopPropagation(); onStarToggle(app.id); }}
-              title={app.starred ? "Unstar" : "Star"}
-              className={`shrink-0 transition-colors ${app.starred ? "text-amber-400 hover:text-amber-300" : "text-slate-300 dark:text-slate-600 hover:text-amber-400 dark:hover:text-amber-400"}`}
-            >
-              <Star className="w-4 h-4" fill={app.starred ? "currentColor" : "none"} />
-            </button>
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
-
-            {/* Clickable status badge with dropdown */}
-            <div className="relative" ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => setOpen((o) => !o)}
-                className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-opacity hover:opacity-80 ${STATUS_COLORS[app.status]}`}
-              >
-                {app.status}
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </button>
-
-              {open && (
-                <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-slate-950 py-1 min-w-[150px]">
-                  {ALL_STATUSES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => { onStatusChange(app.id, s); setOpen(false); }}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60 ${s === app.status ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
-                    >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
-                      {s}
-                      {s === app.status && <Check className="w-3 h-3 ml-auto" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {app.platform && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
-                {app.platform}
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{app.role}</p>
-          {(salary || app.work_type || app.contract_type) && (
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {salary && <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{salary}</span>}
-              {app.work_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.work_type}</span>}
-              {app.contract_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.contract_type}</span>}
-            </div>
-          )}
-          {/* Interview stage indicator */}
-          {interviews.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              {interviews.map((iv) => {
-                const Icon = INTERVIEW_TYPE_ICON[iv.type];
-                return (
-                  <span key={iv.id} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${OUTCOME_STYLES[iv.outcome]}`}>
-                    <Icon className="w-3 h-3" />
-                    R{iv.round} {iv.type}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          {app.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {app.tags.map((tag) => (
-                <span key={tag} className="text-xs px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded font-medium">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-          {/* Date — shown below role on mobile only */}
-          <p className="sm:hidden text-xs text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums">
-            {new Date(app.applied_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-            {overdue && <span className="ml-2 text-amber-600 dark:text-amber-400 font-medium">· Follow up overdue</span>}
-          </p>
-        </div>
-
-        {/* Date + actions (desktop) */}
-        <div className="shrink-0 flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex flex-col items-end gap-1">
-            <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
-              {new Date(app.applied_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
-            {overdue && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Follow up
-              </span>
-            )}
-          </div>
-          {/* Action buttons */}
-          <div className="flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-            <Link href={`/applications/${app.id}?edit=1`}
-              className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors">
-              <Pencil className="w-3 h-3" />
-              Edit
-            </Link>
-            <button onClick={() => onDelete(app.id)}
-              className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 font-medium transition-colors">
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </button>
-          </div>
-          <ChevronRight className="hidden sm:block w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0" />
-        </div>
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Delete reveal layer */}
+      <div
+        className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-500 rounded-xl px-5"
+        style={{ width: Math.max(0, -swipeX) + 16, opacity: Math.min(1, -swipeX / SWIPE_THRESHOLD) }}
+      >
+        <Trash2 className="w-5 h-5 text-white" />
       </div>
 
-      {/* Links row */}
-      {(app.job_url || app.cv_file || app.cv_url || app.cl_file || app.cl_url || app.notes) && (
-        <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap" onClick={(e) => e.stopPropagation()}>
-          {app.job_url && (
-            <a href={app.job_url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
-              <ExternalLink className="w-3.5 h-3.5" />
-              Job posting
-            </a>
+      {/* Card itself */}
+      <div
+        style={{ transform: `translateX(${Math.min(0, swipeX)}px)`, transition: swiping ? "none" : "transform 0.3s ease" }}
+        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; setSwiping(true); }}
+        onTouchMove={(e) => {
+          if (touchStartX.current === null) return;
+          const delta = e.touches[0].clientX - touchStartX.current;
+          if (delta < 0) setSwipeX(Math.max(-120, delta));
+        }}
+        onTouchEnd={() => {
+          setSwiping(false);
+          if (swipeX < -SWIPE_THRESHOLD) {
+            onDelete(app.id);
+          }
+          setSwipeX(0);
+          touchStartX.current = null;
+        }}
+        onClick={() => { if (swipeX < -5) return; router.push(`/applications/${app.id}`); }}
+        className={`group bg-white dark:bg-slate-900 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-slate-900 transition-shadow duration-200 cursor-pointer ${
+          overdue
+            ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10"
+            : "border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+        }`}
+      >
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Checkbox (bulk select) */}
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={selected ?? false}
+              onChange={(e) => onSelect(app.id, e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer"
+            />
           )}
-          {app.cv_url && (
-            <a href={app.cv_url} {...(app.cv_file ? { download: app.cv_file } : { target: "_blank", rel: "noopener noreferrer" })}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
-              <FileText className="w-3.5 h-3.5" />
-              CV
-            </a>
-          )}
-          {app.cl_url && (
-            <a href={app.cl_url} {...(app.cl_file ? { download: app.cl_file } : { target: "_blank", rel: "noopener noreferrer" })}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
-              <FileSignature className="w-3.5 h-3.5" />
-              Cover letter
-            </a>
-          )}
-          {app.notes && (
-            <span className="text-xs text-slate-400 dark:text-slate-500 italic truncate max-w-[200px] sm:max-w-xs">{app.notes}</span>
-          )}
+          {/* Avatar */}
+          <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${avatarColor(app.company)}`}>
+            {initials}
+          </div>
+
+          {/* Main info */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={(e) => { e.stopPropagation(); onStarToggle(app.id); }}
+                title={app.starred ? "Unstar" : "Star"}
+                className={`shrink-0 transition-colors ${app.starred ? "text-amber-400 hover:text-amber-300" : "text-slate-300 dark:text-slate-600 hover:text-amber-400 dark:hover:text-amber-400"}`}
+              >
+                <Star className="w-4 h-4" fill={app.starred ? "currentColor" : "none"} />
+              </button>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">{app.company}</h3>
+
+              {/* Clickable status badge with dropdown */}
+              <div className="relative" ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setOpen((o) => !o)}
+                  className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-opacity hover:opacity-80 ${STATUS_COLORS[app.status]}`}
+                >
+                  {app.status}
+                  <ChevronDown className="w-3 h-3 opacity-60" />
+                </button>
+
+                {open && (
+                  <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-slate-950 py-1 min-w-[150px]">
+                    {ALL_STATUSES.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => { onStatusChange(app.id, s); setOpen(false); }}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60 ${s === app.status ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
+                      >
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
+                        {s}
+                        {s === app.status && <Check className="w-3 h-3 ml-auto" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {app.platform && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
+                  {app.platform}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{app.role}</p>
+            {(salary || app.work_type || app.contract_type) && (
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {salary && <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{salary}</span>}
+                {app.work_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.work_type}</span>}
+                {app.contract_type && <span className="text-xs text-slate-400 dark:text-slate-500">{app.contract_type}</span>}
+              </div>
+            )}
+            {/* Interview stage indicator */}
+            {interviews.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                {interviews.map((iv) => {
+                  const Icon = INTERVIEW_TYPE_ICON[iv.type];
+                  return (
+                    <span key={iv.id} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${OUTCOME_STYLES[iv.outcome]}`}>
+                      <Icon className="w-3 h-3" />
+                      R{iv.round} {iv.type}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {app.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {app.tags.map((tag) => (
+                  <span key={tag} className="text-xs px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded font-medium">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Date — shown below role on mobile only */}
+            <p className="sm:hidden text-xs text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums">
+              {new Date(app.applied_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              {overdue && <span className="ml-2 text-amber-600 dark:text-amber-400 font-medium">· Follow up overdue</span>}
+            </p>
+          </div>
+
+          {/* Date + actions (desktop) */}
+          <div className="shrink-0 flex items-center gap-2 sm:gap-3">
+            <div className="hidden sm:flex flex-col items-end gap-1">
+              <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+                {new Date(app.applied_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+              {overdue && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Follow up
+                </span>
+              )}
+            </div>
+            {/* Action buttons */}
+            <div className="flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+              <Link href={`/applications/${app.id}?edit=1`}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors">
+                <Pencil className="w-3 h-3" />
+                Edit
+              </Link>
+              <button onClick={() => onDelete(app.id)}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 font-medium transition-colors">
+                <Trash2 className="w-3 h-3" />
+                Delete
+              </button>
+            </div>
+            <ChevronRight className="hidden sm:block w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0" />
+          </div>
         </div>
-      )}
+
+        {/* Links row */}
+        {(app.job_url || app.cv_file || app.cv_url || app.cl_file || app.cl_url || app.notes) && (
+          <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap" onClick={(e) => e.stopPropagation()}>
+            {app.job_url && (
+              <a href={app.job_url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Job posting
+              </a>
+            )}
+            {app.cv_url && (
+              <a href={app.cv_url} {...(app.cv_file ? { download: app.cv_file } : { target: "_blank", rel: "noopener noreferrer" })}
+                className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
+                <FileText className="w-3.5 h-3.5" />
+                CV
+              </a>
+            )}
+            {app.cl_url && (
+              <a href={app.cl_url} {...(app.cl_file ? { download: app.cl_file } : { target: "_blank", rel: "noopener noreferrer" })}
+                className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
+                <FileSignature className="w-3.5 h-3.5" />
+                Cover letter
+              </a>
+            )}
+            {app.notes && (
+              <span className="text-xs text-slate-400 dark:text-slate-500 italic truncate max-w-[200px] sm:max-w-xs">{app.notes}</span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

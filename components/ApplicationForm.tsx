@@ -9,11 +9,12 @@ interface Props {
   initial?: Partial<Application>;
   onSubmit: (data: Partial<Application>) => void;
   submitLabel: string;
+  existingCompanies?: string[];
 }
 
 const PLATFORM_VALUES = PLATFORMS as readonly string[];
 
-export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
+export function ApplicationForm({ initial, onSubmit, submitLabel, existingCompanies }: Props) {
   const [company, setCompany] = useState(initial?.company ?? "");
   const [role, setRole] = useState(initial?.role ?? "");
   const [jobUrl, setJobUrl] = useState(initial?.job_url ?? "");
@@ -39,6 +40,10 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
   const [salaryMin, setSalaryMin] = useState(initial?.salary_min != null ? String(initial.salary_min) : "");
   const [salaryMax, setSalaryMax] = useState(initial?.salary_max != null ? String(initial.salary_max) : "");
   const [error, setError] = useState<string | null>(null);
+
+  const isDuplicate = !initial?.id && existingCompanies?.some(
+    (c) => c.toLowerCase() === company.trim().toLowerCase()
+  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,11 +82,16 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {existingCompanies && existingCompanies.length > 0 && (
+        <datalist id="company-suggestions">
+          {existingCompanies.map((c) => <option key={c} value={c} />)}
+        </datalist>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Company <span className="text-indigo-500">*</span></label>
           <input type="text" required value={company} onChange={(e) => setCompany(e.target.value)}
-            className={inputCls} placeholder="Acme Corp" />
+            className={inputCls} placeholder="Acme Corp" list="company-suggestions" />
         </div>
         <div>
           <label className={labelCls}>Role <span className="text-indigo-500">*</span></label>
@@ -205,6 +215,15 @@ export function ApplicationForm({ initial, onSubmit, submitLabel }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {error}
+        </div>
+      )}
+
+      {isDuplicate && (
+        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3.5 py-2.5">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          You&apos;ve already applied to {company.trim()} — is this a new role?
         </div>
       )}
 

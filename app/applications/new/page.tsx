@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApplicationForm } from "@/components/ApplicationForm";
 import { Application } from "@/lib/types";
-import { createApp } from "@/lib/store";
+import { createApp, getApps } from "@/lib/store";
 
 export default function NewApplication() {
   const router = useRouter();
+  const [existingCompanies, setExistingCompanies] = useState<string[]>([]);
+
+  useEffect(() => {
+    getApps().then((apps) => setExistingCompanies(apps.map((a) => a.company)));
+  }, []);
 
   async function handleSubmit(data: Partial<Application>) {
     const created = await createApp(data);
@@ -26,7 +32,7 @@ export default function NewApplication() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Track a new job you&apos;ve applied to.</p>
       </div>
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-slate-950">
-        <ApplicationForm onSubmit={handleSubmit} submitLabel="Save application" />
+        <ApplicationForm onSubmit={handleSubmit} submitLabel="Save application" existingCompanies={existingCompanies} />
       </div>
     </div>
   );
