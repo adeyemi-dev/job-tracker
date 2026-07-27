@@ -216,31 +216,31 @@ export default function ApplicationDetail() {
                 </div>
               )}
               {app.cv_url && (
-                <div>
+                <div className="min-w-0">
                   <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">CV</dt>
-                  <dd>
+                  <dd className="min-w-0">
                     <a
                       href={app.cv_url}
                       {...(app.cv_file ? { download: app.cv_file } : { target: "_blank", rel: "noopener noreferrer" })}
-                      className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium transition-colors max-w-full"
                     >
-                      <FileText className="w-3.5 h-3.5" />
-                      {app.cv_file ?? "Open CV"}
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{app.cv_file ?? "Open CV"}</span>
                     </a>
                   </dd>
                 </div>
               )}
               {app.cl_url && (
-                <div>
+                <div className="min-w-0">
                   <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Cover letter</dt>
-                  <dd>
+                  <dd className="min-w-0">
                     <a
                       href={app.cl_url}
                       {...(app.cl_file ? { download: app.cl_file } : { target: "_blank", rel: "noopener noreferrer" })}
-                      className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium transition-colors max-w-full"
                     >
-                      <FileSignature className="w-3.5 h-3.5" />
-                      {app.cl_file ?? "Open cover letter"}
+                      <FileSignature className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{app.cl_file ?? "Open cover letter"}</span>
                     </a>
                   </dd>
                 </div>
