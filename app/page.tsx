@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Application, ALL_STATUSES, Status, STATUS_DOT, isOverdue } from "@/lib/types";
+import { Application, ALL_STATUSES, Status, STATUS_DOT, STATUS_COLORS, isOverdue, Interview, InterviewType, InterviewOutcome, OUTCOME_STYLES } from "@/lib/types";
 import { ApplicationCard } from "@/components/ApplicationCard";
 import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -9,9 +9,20 @@ import { SkeletonList, LoadingBar } from "@/components/Skeleton";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, getAllInterviews, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
-import { Interview } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
-import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown, Phone, Video, Building2, Code2, FileText } from "lucide-react";
+
+const INTERVIEW_TYPE_ICON: Record<InterviewType, React.ElementType> = {
+  Phone, Video, Onsite: Building2, Technical: Code2, HR: Users, Other: FileText,
+};
+const INTERVIEW_TYPE_COLOR: Record<InterviewType, string> = {
+  Phone:     "bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400",
+  Video:     "bg-blue-100   dark:bg-blue-900/40   text-blue-600   dark:text-blue-400",
+  Onsite:    "bg-amber-100  dark:bg-amber-900/40  text-amber-600  dark:text-amber-400",
+  Technical: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400",
+  HR:        "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400",
+  Other:     "bg-slate-100  dark:bg-slate-800     text-slate-600  dark:text-slate-400",
+};
 
 type SortKey = "newest" | "oldest" | "company-az" | "company-za" | "salary-high" | "status";
 
@@ -239,9 +250,9 @@ export default function Dashboard() {
             <p className="text-indigo-200/70 mt-2.5 text-sm max-w-sm">{greeting.sub}</p>
           </div>
           {loaded && allApps.length > 0 && (
-            <div className="shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-5 py-3.5 text-center hidden sm:block">
-              <p className="text-3xl font-bold text-white tabular-nums">{allApps.length}</p>
-              <p className="text-indigo-200/60 text-xs mt-0.5 font-medium">apps tracked</p>
+            <div className="shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-white tabular-nums">{allApps.length}</p>
+              <p className="text-indigo-200/60 text-[11px] sm:text-xs mt-0.5 font-medium whitespace-nowrap">apps tracked</p>
             </div>
           )}
         </div>
@@ -296,6 +307,108 @@ export default function Dashboard() {
           })}
         </div>
       )}
+
+      {/* In the pipeline */}
+      {loaded && (() => {
+        const activeProcesses = allApps
+          .filter((a) => (allInterviews[a.id] ?? []).length > 0 && !["Rejected", "Ghosted", "Withdrawn"].includes(a.status))
+          .map((a) => {
+            const rounds = (allInterviews[a.id] ?? []).slice().sort((x, y) => x.round - y.round);
+            return { app: a, rounds };
+          });
+        if (activeProcesses.length === 0) return null;
+        const pendingCount = activeProcesses.flatMap((p) => p.rounds).filter((r) => r.outcome === "Pending").length;
+        return (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">In the pipeline</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{activeProcesses.length} active process{activeProcesses.length !== 1 ? "es" : ""}</p>
+              </div>
+              {pendingCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800">
+                  <Clock className="w-3.5 h-3.5" />
+                  {pendingCount} awaiting
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {activeProcesses.map(({ app, rounds }) => (
+                <div key={app.id} onClick={() => window.location.href = `/applications/${app.id}`}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200">
+                  {/* Card header */}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0">
+                        {app.company.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">{app.company}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{app.role}</p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2 ${STATUS_COLORS[app.status]}`}>{app.status}</span>
+                  </div>
+                  {/* Current round banner */}
+                  {(() => {
+                    const cur = rounds.slice().reverse().find((r) => r.outcome === "Pending") ?? rounds[rounds.length - 1];
+                    const CurIcon = INTERVIEW_TYPE_ICON[cur.type];
+                    const isPending = cur.outcome === "Pending";
+                    return (
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-3 ${isPending ? "bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/60" : cur.outcome === "Passed" ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/60" : "bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/60"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isPending ? "bg-indigo-500 animate-pulse" : cur.outcome === "Passed" ? "bg-emerald-500" : "bg-red-500"}`} />
+                        <CurIcon className={`w-3.5 h-3.5 shrink-0 ${isPending ? "text-indigo-500" : cur.outcome === "Passed" ? "text-emerald-600" : "text-red-500"}`} />
+                        <span className={`text-xs font-bold flex-1 ${isPending ? "text-indigo-700 dark:text-indigo-300" : cur.outcome === "Passed" ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
+                          Round {cur.round} · {cur.type}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${OUTCOME_STYLES[cur.outcome as InterviewOutcome]}`}>{cur.outcome}</span>
+                      </div>
+                    );
+                  })()}
+                  {/* Round track */}
+                  <div className="overflow-x-auto -mx-1 px-1">
+                    <div className="relative inline-flex items-start" style={{ minWidth: "100%" }}>
+                      {rounds.length > 1 && (
+                        <div className="absolute top-[16px] h-0.5 bg-slate-200 dark:bg-slate-700 pointer-events-none z-0"
+                          style={{ left: 16, right: 16 }} />
+                      )}
+                      <div className={`flex items-start w-full z-10 relative ${rounds.length === 1 ? "justify-start" : "justify-between"}`}>
+                        {(() => {
+                          const cur = rounds.slice().reverse().find((r) => r.outcome === "Pending") ?? rounds[rounds.length - 1];
+                          return rounds.map((iv) => {
+                            const Icon = INTERVIEW_TYPE_ICON[iv.type];
+                            const isCurrent = iv.id === cur.id;
+                            const nodeBg = iv.outcome === "Passed"
+                              ? "bg-emerald-500 shadow-sm shadow-emerald-200 dark:shadow-emerald-900"
+                              : iv.outcome === "Failed"
+                              ? "bg-red-500 shadow-sm shadow-red-200 dark:shadow-red-900"
+                              : "bg-amber-400 shadow-sm shadow-amber-200 dark:shadow-amber-900";
+                            const pillCls = iv.outcome === "Passed"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                              : iv.outcome === "Failed"
+                              ? "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-400"
+                              : "bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+                            return (
+                              <div key={iv.id} className="flex flex-col items-center gap-1 relative px-2 first:pl-0 last:pr-0" style={{ minWidth: 64 }}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${nodeBg} ${isCurrent ? "ring-2 ring-offset-1 ring-indigo-400 dark:ring-offset-slate-900" : ""}`}>
+                                  <Icon className="w-3.5 h-3.5 text-white" />
+                                </div>
+                                <span className={`text-[10px] font-semibold text-center whitespace-nowrap ${isCurrent ? "text-indigo-600 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>R{iv.round} {iv.type}</span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${pillCls}`}>{iv.outcome}</span>
+                                {isCurrent && <span className="text-[9px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wide">now</span>}
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Toolbar: view toggle + export/import */}
       {loaded && allApps.length > 0 && (
