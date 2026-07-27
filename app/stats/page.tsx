@@ -244,7 +244,9 @@ async function computeStats(): Promise<StatsData> {
     const activeProcesses = apps
       .filter((a) => {
         const ivs = allInterviews[a.id] ?? [];
-        return ivs.length > 0 && !["Rejected", "Ghosted", "Withdrawn"].includes(a.status);
+        if (ivs.length === 0 || ["Rejected", "Ghosted", "Withdrawn"].includes(a.status)) return false;
+        const sorted = [...ivs].sort((x, y) => x.round - y.round);
+        return sorted[sorted.length - 1].outcome !== "Failed";
       })
       .map((a) => {
         const ivs = (allInterviews[a.id] ?? []).slice().sort((x, y) => x.round - y.round);
