@@ -63,7 +63,7 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
   }, [open]);
 
   return (
-    <div className="relative rounded-xl">
+    <div className={`relative rounded-xl${open ? " z-10" : ""}`}>
       {/* Delete reveal layer — zero width when not swiping so no overflow-hidden needed */}
       <div
         className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-500 rounded-xl px-5 overflow-hidden"
