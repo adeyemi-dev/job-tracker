@@ -41,7 +41,9 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
   const overdue = isOverdue(app.followup_date) && !["Rejected", "Withdrawn", "Ghosted"].includes(app.status);
   const salary = formatSalary(app);
   const [open, setOpen] = useState(false);
+  const [dropdownUp, setDropdownUp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Swipe-to-delete state
   const [swipeX, setSwipeX] = useState(0);
@@ -125,7 +127,14 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
               {/* Clickable status badge with dropdown */}
               <div className="relative" ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
                 <button
-                  onClick={() => setOpen((o) => !o)}
+                  ref={triggerRef}
+                  onClick={() => {
+                    if (!open && triggerRef.current) {
+                      const rect = triggerRef.current.getBoundingClientRect();
+                      setDropdownUp(window.innerHeight - rect.bottom < 220);
+                    }
+                    setOpen((o) => !o);
+                  }}
                   className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-opacity hover:opacity-80 ${STATUS_COLORS[app.status]}`}
                 >
                   {app.status}
@@ -133,12 +142,12 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
                 </button>
 
                 {open && (
-                  <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-slate-950 py-1 min-w-[150px]">
+                  <div className={`absolute left-0 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-slate-950 py-1 min-w-[160px] max-h-60 overflow-y-auto ${dropdownUp ? "bottom-full mb-1.5" : "top-full mt-1.5"}`}>
                     {ALL_STATUSES.map((s) => (
                       <button
                         key={s}
                         onClick={() => { onStatusChange(app.id, s); setOpen(false); }}
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60 ${s === app.status ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60 ${s === app.status ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
                       >
                         <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
                         {s}
