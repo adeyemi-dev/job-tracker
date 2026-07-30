@@ -63,11 +63,11 @@ export function ApplicationCard({ app, onDelete, onStatusChange, onStarToggle, s
   }, [open]);
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
-      {/* Delete reveal layer */}
+    <div className="relative rounded-xl">
+      {/* Delete reveal layer — zero width when not swiping so no overflow-hidden needed */}
       <div
-        className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-500 rounded-xl px-5"
-        style={{ width: Math.max(0, -swipeX) + 16, opacity: Math.min(1, -swipeX / SWIPE_THRESHOLD) }}
+        className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-500 rounded-xl px-5 overflow-hidden"
+        style={{ width: swipeX < 0 ? Math.max(0, -swipeX) : 0, opacity: Math.min(1, -swipeX / SWIPE_THRESHOLD) }}
       >
         <Trash2 className="w-5 h-5 text-white" />
       </div>
