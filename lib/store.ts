@@ -134,7 +134,9 @@ export async function updateApp(id: string, data: Partial<Application>): Promise
 
   const updates: Record<string, unknown> = { ...data, updated_at: now };
 
-  if (data.status && data.status !== current.status) {
+  const statusChanged = data.status && data.status !== current.status;
+
+  if (statusChanged) {
     const existing: StatusHistoryEntry[] = current.status_history?.length
       ? current.status_history
       : [{ status: current.status, changed_at: now }];
@@ -149,6 +151,16 @@ export async function updateApp(id: string, data: Partial<Application>): Promise
     .single();
 
   if (error) throw error;
+
+  // Auto-fail any pending interview rounds when app reaches a terminal status
+  if (statusChanged && ["Rejected", "Ghosted", "Withdrawn"].includes(data.status!)) {
+    await supabase
+      .from("interviews")
+      .update({ outcome: "Failed" })
+      .eq("application_id", id)
+      .eq("outcome", "Pending");
+  }
+
   return mapApp(row);
 }
 

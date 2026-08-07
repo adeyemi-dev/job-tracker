@@ -36,6 +36,11 @@ export default function ApplicationDetail() {
   async function handleStatusChange(status: Status) {
     const updated = await updateApp(id, { status });
     setApp(updated);
+    if (["Rejected", "Ghosted", "Withdrawn"].includes(status)) {
+      setInterviews((prev) =>
+        prev.map((iv) => iv.outcome === "Pending" ? { ...iv, outcome: "Failed" as const } : iv)
+      );
+    }
   }
 
   async function handleDelete() {

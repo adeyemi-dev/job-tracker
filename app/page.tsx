@@ -219,6 +219,14 @@ export default function Dashboard() {
   async function handleStatusChange(id: string, status: Status) {
     const updated = await updateApp(id, { status });
     setAllApps((prev) => prev.map((a) => a.id === id ? updated : a));
+    if (["Rejected", "Ghosted", "Withdrawn"].includes(status)) {
+      setAllInterviews((prev) => ({
+        ...prev,
+        [id]: (prev[id] ?? []).map((iv) =>
+          iv.outcome === "Pending" ? { ...iv, outcome: "Failed" as const } : iv
+        ),
+      }));
+    }
   }
 
   async function handleStarToggle(id: string) {
