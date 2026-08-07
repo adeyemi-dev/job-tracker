@@ -366,6 +366,51 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Interview roundup card */}
+      {loaded && (() => {
+        const allIvList = Object.values(allInterviews).flat();
+        if (allIvList.length === 0) return null;
+        const totalRounds = allIvList.length;
+        const companiesCount = Object.values(allInterviews).filter((ivs) => ivs.length > 0).length;
+        const passed = allIvList.filter((iv) => iv.outcome === "Passed").length;
+        const failed = allIvList.filter((iv) => iv.outcome === "Failed").length;
+        const pending = allIvList.filter((iv) => iv.outcome === "Pending").length;
+        const passRate = passed + failed > 0 ? Math.round((passed / (passed + failed)) * 100) : null;
+        return (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Interview history</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">All rounds — successful or not</p>
+              </div>
+              {passRate !== null && (
+                <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                  {passRate}% pass rate
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3.5">
+                <p className="text-2xl font-bold tabular-nums text-indigo-700 dark:text-indigo-300">{totalRounds}</p>
+                <p className="text-xs font-medium text-indigo-500 dark:text-indigo-400 mt-0.5">Total rounds</p>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5">
+                <p className="text-2xl font-bold tabular-nums text-slate-700 dark:text-slate-200">{companiesCount}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Companies</p>
+              </div>
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3.5">
+                <p className="text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{passed}</p>
+                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">Passed</p>
+              </div>
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3.5">
+                <p className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">{failed}</p>
+                <p className="text-xs font-medium text-red-500 dark:text-red-400 mt-0.5">Failed{pending > 0 ? ` · ${pending} pending` : ""}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* In the pipeline */}
       {loaded && (() => {
         const activeProcesses = allApps
