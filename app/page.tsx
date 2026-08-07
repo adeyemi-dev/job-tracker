@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Application, ALL_STATUSES, Status, STATUS_DOT, STATUS_COLORS, isOverdue, Interview, InterviewType, InterviewOutcome, OUTCOME_STYLES } from "@/lib/types";
+import { Application, ALL_STATUSES, Status, STATUS_DOT, STATUS_COLORS, isOverdue, Interview, InterviewType, InterviewOutcome, OUTCOME_STYLES, avatarColor } from "@/lib/types";
 import { ApplicationCard } from "@/components/ApplicationCard";
 import { DailyGoalBanner } from "@/components/DailyGoalBanner";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -10,7 +10,7 @@ import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import { getApps, getAllInterviews, deleteApp, updateApp, exportJSON, exportCSV, importJSON } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown, Phone, Video, Building2, Code2, FileText, Printer } from "lucide-react";
+import { Search, X, Star, Download, Upload, LayoutList, Columns, Trash2, Clock, Zap, Users, BadgeCheck, XCircle, ChevronUp, ChevronDown, ChevronRight, Phone, Video, Building2, Code2, FileText, Printer } from "lucide-react";
 
 const INTERVIEW_TYPE_ICON: Record<InterviewType, React.ElementType> = {
   Phone, Video, Onsite: Building2, Technical: Code2, HR: Users, Other: FileText,
@@ -73,6 +73,7 @@ export default function Dashboard() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
+  const [ivHistoryOpen, setIvHistoryOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -371,31 +372,50 @@ export default function Dashboard() {
         const allIvList = Object.values(allInterviews).flat();
         if (allIvList.length === 0) return null;
         const totalRounds = allIvList.length;
-        const companiesCount = Object.values(allInterviews).filter((ivs) => ivs.length > 0).length;
         const passed = allIvList.filter((iv) => iv.outcome === "Passed").length;
         const failed = allIvList.filter((iv) => iv.outcome === "Failed").length;
         const pending = allIvList.filter((iv) => iv.outcome === "Pending").length;
         const passRate = passed + failed > 0 ? Math.round((passed / (passed + failed)) * 100) : null;
+
+        const processes = allApps
+          .filter((a) => (allInterviews[a.id] ?? []).length > 0)
+          .map((a) => ({
+            app: a,
+            rounds: (allInterviews[a.id] ?? []).slice().sort((x, y) => x.round - y.round),
+          }))
+          .sort((a, b) => b.rounds.length - a.rounds.length);
+
         return (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 mb-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mb-6 overflow-hidden">
+            {/* Header — always clickable */}
+            <button
+              onClick={() => setIvHistoryOpen((o) => !o)}
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+            >
               <div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Interview history</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">All rounds — successful or not</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {totalRounds} round{totalRounds !== 1 ? "s" : ""} across {processes.length} compan{processes.length !== 1 ? "ies" : "y"} — tap to {ivHistoryOpen ? "collapse" : "see breakdown"}
+                </p>
               </div>
-              {passRate !== null && (
-                <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                  {passRate}% pass rate
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                {passRate !== null && (
+                  <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                    {passRate}% pass rate
+                  </span>
+                )}
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${ivHistoryOpen ? "rotate-180" : ""}`} />
+              </div>
+            </button>
+
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-5 pb-5">
               <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3.5">
                 <p className="text-2xl font-bold tabular-nums text-indigo-700 dark:text-indigo-300">{totalRounds}</p>
                 <p className="text-xs font-medium text-indigo-500 dark:text-indigo-400 mt-0.5">Total rounds</p>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5">
-                <p className="text-2xl font-bold tabular-nums text-slate-700 dark:text-slate-200">{companiesCount}</p>
+                <p className="text-2xl font-bold tabular-nums text-slate-700 dark:text-slate-200">{processes.length}</p>
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Companies</p>
               </div>
               <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3.5">
@@ -407,6 +427,49 @@ export default function Dashboard() {
                 <p className="text-xs font-medium text-red-500 dark:text-red-400 mt-0.5">Failed{pending > 0 ? ` · ${pending} pending` : ""}</p>
               </div>
             </div>
+
+            {/* Expanded breakdown */}
+            {ivHistoryOpen && (
+              <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+                {processes.map(({ app, rounds }) => {
+                  const appPassed = rounds.filter((r) => r.outcome === "Passed").length;
+                  const appFailed = rounds.filter((r) => r.outcome === "Failed").length;
+                  const appPending = rounds.filter((r) => r.outcome === "Pending").length;
+                  return (
+                    <a key={app.id} href={`/applications/${app.id}`}
+                      className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+                      {/* Avatar */}
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${avatarColor(app.company)}`}>
+                        {app.company.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
+                      </div>
+                      {/* Company + role */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{app.company}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{app.role}</p>
+                      </div>
+                      {/* Round pills */}
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
+                        {rounds.map((r) => (
+                          <span key={r.id} className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
+                            r.outcome === "Passed" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                            : r.outcome === "Failed" ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400"
+                            : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                          }`}>
+                            R{r.round} {r.type}
+                          </span>
+                        ))}
+                        <span className="text-xs text-slate-400 dark:text-slate-500 ml-1 tabular-nums">
+                          {appPassed > 0 && <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{appPassed}✓</span>}
+                          {appFailed > 0 && <span className="text-red-500 dark:text-red-400 font-semibold ml-1">{appFailed}✗</span>}
+                          {appPending > 0 && <span className="text-amber-500 dark:text-amber-400 font-semibold ml-1">{appPending}⏳</span>}
+                        </span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 shrink-0" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })()}
